@@ -8,6 +8,7 @@ import SwiftUI
 /// and the selected widget below.
 struct ExpandedView: View {
     let app: AppModel
+    @Environment(\.isIslandPicture) private var isPicture
     @Namespace private var tabSpace
 
     init(app: AppModel) {
@@ -57,25 +58,33 @@ struct ExpandedView: View {
             }
             .frame(height: max(state.notch.height, 28))
 
-            Group {
-                switch state.tab {
-                case .home: HomeTab(app: app)
-                case .calendar: CalendarTab(app: app)
-                case .camera: CameraTab(app: app)
-                case .apps: AppsTab(app: app)
-                case .inbox: InboxTab(app: app)
-                case .notes: NotesTab(app: app)
-                case .timer: TimerTab(app: app)
-                case .play: PlayTab(app: app)
-                }
+            if isPicture {
+                tabContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                tabContent
+                    .id(state.tab)
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .id(state.tab)
-            .transition(.opacity.combined(with: .scale(scale: 0.97)))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 14)
         .foregroundStyle(.white)
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch app.state.tab {
+        case .home: HomeTab(app: app)
+        case .calendar: CalendarTab(app: app)
+        case .camera: CameraTab(app: app)
+        case .apps: AppsTab(app: app)
+        case .inbox: InboxTab(app: app)
+        case .notes: NotesTab(app: app)
+        case .timer: TimerTab(app: app)
+        case .play: PlayTab(app: app)
+        }
     }
 
     private func tabButton(_ tab: IslandTab, slot: CGFloat) -> some View {

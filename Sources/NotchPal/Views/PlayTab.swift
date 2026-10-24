@@ -9,6 +9,8 @@ struct PlayTab: View {
     let app: AppModel
     @Bindable private var settings: SettingsStore
 
+    @Environment(\.isIslandPicture) private var isPicture
+
     init(app: AppModel) {
         self.app = app
         _settings = Bindable(wrappedValue: app.settings)
@@ -30,15 +32,23 @@ struct PlayTab: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.5))
                     .monospacedDigit()
-                Picker("Difficulty", selection: $settings.difficulty) {
-                    ForEach(Difficulty.allCases) { level in
-                        Text(level.label).tag(level)
+                if isPicture {
+                    Text(settings.difficulty.label)
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 14)
+                        .frame(height: 22)
+                        .background(Capsule().fill(Color.white.opacity(0.14)))
+                } else {
+                    Picker("Difficulty", selection: $settings.difficulty) {
+                        ForEach(Difficulty.allCases) { level in
+                            Text(level.label).tag(level)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .frame(width: 168)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .controlSize(.small)
-                .frame(width: 168)
             }
             GameCanvas(hub: hub)
         }

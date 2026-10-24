@@ -5,6 +5,20 @@
 import AppKit
 import SwiftUI
 
+private struct IslandPictureKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True while NotchPal draws a picture of the island. Native macOS controls (menus, pickers,
+    /// scroll views) can't be drawn into a picture, so views show simple look-alikes instead,
+    /// and nothing animates in.
+    var isIslandPicture: Bool {
+        get { self[IslandPictureKey.self] }
+        set { self[IslandPictureKey.self] = newValue }
+    }
+}
+
 /// "Save Pictures of My Island…": draws the island exactly as it looks right now, in a few of its
 /// states, and saves them as sharp PNG pictures you can share. Nothing is uploaded anywhere.
 @MainActor
@@ -16,6 +30,7 @@ enum IslandPictures {
         panel.canCreateDirectories = true
         panel.prompt = "Save Here"
         panel.message = "Choose where to save pictures of your island. NotchPal makes a \"NotchPal Pictures\" folder there."
+        panel.directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
         NSApp.activate()
         guard panel.runModal() == .OK, let chosen = panel.url else { return }
 
@@ -42,12 +57,26 @@ enum IslandPictures {
     }
 
     private static func write(_ view: some View, to url: URL) {
-        let renderer = ImageRenderer(content: view.environment(\.colorScheme, .dark))
+        let renderer = ImageRenderer(content: view
+            .environment(\.colorScheme, .dark)
+            .environment(\.isIslandPicture, true))
         renderer.scale = 2
-        guard let image = renderer.cgImage,
-              let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+        guard let image = renderer.cgImage, let standard = standardColors(image),
+              let data = NSBitmapImageRep(cgImage: standard).representation(using: .png, properties: [:])
         else { return }
         try? data.write(to: url)
+    }
+
+    /// Album art and app icons can make macOS draw in an HDR colour format, which most image viewers
+    /// (and GitHub) show washed out. Redrawing into plain sRGB makes the colours look right everywhere.
+    private static func standardColors(_ image: CGImage) -> CGImage? {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: space,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return context.makeImage()
     }
 }
 

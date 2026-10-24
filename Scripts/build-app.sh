@@ -22,6 +22,9 @@ cp "$BIN_DIR/NotchPal" "$APP/Contents/MacOS/NotchPal"
 cp "$BIN_DIR/libNotchPalMediaBridge.dylib" "$APP/Contents/Resources/"
 cp Support/media-bridge.pl "$APP/Contents/Resources/"
 cp Support/Info.plist "$APP/Contents/Info.plist"
+# Readable by everyone, and no leftover Finder or download tags, so the app is the same on every Mac.
+chmod -R u+rwX,go+rX "$APP"
+xattr -cr "$APP" 2>/dev/null || true
 
 # Signing. macOS remembers permissions (Camera, Calendar, Accessibility) by the app's
 # signature. An ad-hoc signature ("-") changes on every build, so macOS forgets them each time.
@@ -47,7 +50,7 @@ fi
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)"
 mkdir -p dist
 rm -f dist/NotchPal-*.zip
-ditto -c -k --keepParent "$APP" "dist/NotchPal-$VERSION.zip"
+ditto -c -k --norsrc --noextattr --keepParent "$APP" "dist/NotchPal-$VERSION.zip"
 echo "Release zip: dist/NotchPal-$VERSION.zip"
 
 # Install like a normal app, so login items and permissions work properly.

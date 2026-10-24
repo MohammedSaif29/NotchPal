@@ -7,35 +7,49 @@ import SwiftUI
 /// Apps: your favourite apps, one click away. Add more with +, right-click to remove or move.
 struct AppsTab: View {
     let app: AppModel
+    @Environment(\.isIslandPicture) private var isPicture
+
+    init(app: AppModel) {
+        self.app = app
+    }
 
     var body: some View {
+        if isPicture {
+            grid
+                .frame(maxHeight: .infinity, alignment: .top)
+        } else {
+            ScrollView(.vertical, showsIndicators: false) {
+                grid
+            }
+        }
+    }
+
+    private var grid: some View {
         let shelf = app.shelf
         let scale = IslandLayout.contentScale(app)
         let columns = [GridItem(.adaptive(minimum: 58 * scale, maximum: 76 * scale), spacing: 8)]
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(shelf.items) { item in
-                    AppTile(name: item.name, icon: shelf.icon(for: item), scale: scale) {
-                        shelf.launch(item)
-                        app.closeIsland()
-                    }
-                    .contextMenu {
-                        Button("Open") { shelf.launch(item) }
-                        Button("Move Left") { shelf.move(item, by: -1) }
-                        Button("Move Right") { shelf.move(item, by: 1) }
-                        Divider()
-                        Button("Remove from Notch") { shelf.remove(item) }
-                    }
-                }
-                AddAppTile(scale: scale) {
+        return LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(shelf.items) { item in
+                AppTile(name: item.name, icon: shelf.icon(for: item), scale: scale) {
+                    shelf.launch(item)
                     app.closeIsland()
-                    DispatchQueue.main.async {
-                        MainActor.assumeIsolated { shelf.pickApps() }
-                    }
+                }
+                .contextMenu {
+                    Button("Open") { shelf.launch(item) }
+                    Button("Move Left") { shelf.move(item, by: -1) }
+                    Button("Move Right") { shelf.move(item, by: 1) }
+                    Divider()
+                    Button("Remove from Notch") { shelf.remove(item) }
                 }
             }
-            .padding(.vertical, 4)
+            AddAppTile(scale: scale) {
+                app.closeIsland()
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated { shelf.pickApps() }
+                }
+            }
         }
+        .padding(.vertical, 4)
     }
 }
 

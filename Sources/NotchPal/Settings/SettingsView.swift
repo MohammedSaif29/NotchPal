@@ -1225,6 +1225,13 @@ private struct AboutSettings: View {
             .padding(16)
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.05)))
 
+            Button {
+                IslandPictures.save(app: app)
+            } label: {
+                Label("Save Pictures of My Island…", systemImage: "camera.viewfinder")
+            }
+            .help("Saves pictures of your island that you can share")
+
             Text("The official NotchPal is only at github.com/MohammedSaif29/NotchPal.\nCopies made by others must use a different name and icon.")
                 .font(.caption)
                 .foregroundStyle(.secondary)

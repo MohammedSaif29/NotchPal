@@ -192,8 +192,23 @@ struct VolumeControl: View {
 struct OutputMenu: View {
     let audio: AudioService
     var scale: CGFloat = 1
+    @Environment(\.isIslandPicture) private var isPicture
+
+    init(audio: AudioService, scale: CGFloat = 1) {
+        self.audio = audio
+        self.scale = scale
+    }
 
     var body: some View {
+        if isPicture {
+            Image(systemName: audio.current?.symbol ?? "hifispeaker")
+                .font(.system(size: 12 * scale, weight: .semibold))
+        } else {
+            menu
+        }
+    }
+
+    private var menu: some View {
         Menu {
             Section("Play sound through") {
                 ForEach(audio.outputs) { output in

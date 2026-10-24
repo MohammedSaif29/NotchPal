@@ -8,6 +8,8 @@ Made by **Mohammed Saif** · [LinkedIn](https://www.linkedin.com/in/saif-mohamme
 
 **[⬇ Download NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)**
 
+![The open island with the music player, AirDrop and battery](docs/screenshots/music.png)
+
 ---
 
 ## Download and install
@@ -59,6 +61,24 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 **Settings**
 - Size: open width and length, corner roundness, closed wing width and height.
 - Look: Black, Liquid Glass, Frosted or Clear, with darkness, tint colour, shiny edge, glass when closed, shadow, animation style and accent colour.
+
+## Pictures
+
+The closed notch while music plays:
+
+![The closed notch with album art and a visualizer](docs/screenshots/closed-notch.png)
+
+Battery styles, with iPhone colours:
+
+![The Ring, Pill, Classic and Number battery styles](docs/screenshots/battery-styles.png)
+
+Games, timers and your favourite apps:
+
+![The Games tab with Runner, Flappy, Snake and Pong](docs/screenshots/games.png)
+![The Timer tab with quick timers](docs/screenshots/timer.png)
+![The Apps tab with favourite apps](docs/screenshots/apps.png)
+
+These were made with NotchPal's own **Save Pictures of My Island…** (menu bar icon, or Settings → About). Use it to share your setup!
 
 ## Privacy, and how it works
 
