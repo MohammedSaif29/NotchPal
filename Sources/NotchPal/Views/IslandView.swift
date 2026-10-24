@@ -43,6 +43,7 @@ struct IslandView: View {
 
             if geometry.bubble > 0 {
                 TimerBubble(timer: app.timer, diameter: geometry.bubble)
+                    .opacity(app.settings.closedBrightness)
                     .offset(x: islandWidth / 2 + IslandLayout.bubbleGap + (geometry.bubble + 8) / 2)
                     .onTapGesture { app.openIsland(tab: .timer) }
                     .transition(.scale(scale: 0.2, anchor: .leading).combined(with: .opacity))
@@ -55,26 +56,32 @@ struct IslandView: View {
         .environment(\.colorScheme, .dark)
     }
 
+    /// Icons and text are dimmed to your Brightness settings. The island itself stays black.
     @ViewBuilder
     private func contentView(_ content: IslandContent, geometry: IslandGeometry) -> some View {
+        let reveal = app.settings.reveal
         switch content {
         case .expanded:
             ExpandedView(app: app)
-                .transition(.islandContent)
+                .opacity(app.settings.openBrightness)
+                .transition(.islandContent(reveal))
         case .drop:
             DropHintView(notchHeight: app.state.notch.height)
-                .transition(.islandContent)
+                .opacity(app.settings.openBrightness)
+                .transition(.islandContent(reveal))
         case .alert(let alert):
             AlertView(app: app, alert: alert)
+                .opacity(max(app.settings.closedBrightness, 0.7))
                 .contentShape(Rectangle())
                 .onTapGesture { open(from: alert) }
                 .id(alert)
-                .transition(.islandContent)
+                .transition(.islandContent(reveal))
         case .compact:
             CompactWingsView(app: app, size: geometry.size)
+                .opacity(app.settings.closedBrightness)
                 .contentShape(Rectangle())
                 .onTapGesture { app.openIsland() }
-                .transition(.islandContent)
+                .transition(.islandContent(reveal))
         case .idle:
             Color.clear
                 .contentShape(Rectangle())
@@ -88,6 +95,11 @@ struct IslandView: View {
         case .nowPlaying: app.openIsland(tab: .home)
         case .event: app.openIsland(tab: .calendar)
         case .message: app.openIsland(tab: .inbox)
+        case .updateAvailable, .updateFailed:
+            app.settingsNavigation.page = .about
+            app.openSettings?()
+        case .updating, .updated:
+            break
         default: app.openIsland()
         }
     }

@@ -17,9 +17,18 @@ enum IslandAlert: Hashable {
     case event(title: String, minutes: Int, link: String?)
     /// An app's unread badge went up.
     case message(app: String, count: String, path: String)
+    /// A new NotchPal version is on GitHub.
+    case updateAvailable(version: String)
+    /// Downloading and installing an update.
+    case updating
+    /// NotchPal just restarted on a new version.
+    case updated(version: String)
+    /// An update didn't install.
+    case updateFailed
 
     enum Category {
         case app
+        case update
         case power
         case device
         case media
@@ -37,6 +46,7 @@ enum IslandAlert: Hashable {
         case .timerDone: .timer
         case .event: .calendar
         case .message: .message
+        case .updateAvailable, .updating, .updated, .updateFailed: .update
         }
     }
 
@@ -51,6 +61,10 @@ enum IslandAlert: Hashable {
         case .timerDone: nil
         case .event: 10
         case .message: 4
+        case .updateAvailable: 15
+        case .updating: nil
+        case .updated: 4
+        case .updateFailed: 6
         }
     }
 
@@ -63,6 +77,10 @@ enum IslandAlert: Hashable {
         case .timerDone: 380
         case .event: 460
         case .message: 400
+        case .updateAvailable: 440
+        case .updating: 380
+        case .updated: 380
+        case .updateFailed: 420
         }
     }
 }

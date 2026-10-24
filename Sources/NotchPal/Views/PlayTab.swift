@@ -20,7 +20,7 @@ struct PlayTab: View {
         let hub = app.games
         VStack(spacing: 8) {
             HStack(spacing: 6) {
-                ForEach(GameKind.allCases) { kind in
+                ForEach(settings.visibleGames) { kind in
                     GameChip(kind: kind, selected: hub.selected == kind) {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                             hub.selected = kind
@@ -54,6 +54,17 @@ struct PlayTab: View {
         }
         .onChange(of: settings.difficulty) {
             hub.resetAll()
+        }
+        .onAppear { keepSelectionVisible() }
+        .onChange(of: settings.hiddenGames) { keepSelectionVisible() }
+    }
+
+    /// If the game you were playing was hidden, switch to one that's still shown.
+    private func keepSelectionVisible() {
+        let games = settings.visibleGames
+        if !games.contains(app.games.selected), let first = games.first {
+            app.games.pauseAll()
+            app.games.selected = first
         }
     }
 }

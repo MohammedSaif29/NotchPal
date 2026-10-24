@@ -44,6 +44,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             app.alerts.show(.message(app: badge.name, count: badge.count, path: badge.path))
         }
 
+        // Updates
+        app.updates.onAvailable = { release in
+            app.alerts.show(.updateAvailable(version: release.version))
+        }
+        app.updates.onFailure = { _ in
+            app.alerts.dismiss(.update)
+            app.alerts.show(.updateFailed)
+        }
+        app.updates.setAutomatic(app.settings.autoCheckUpdates)
+
         app.nowPlaying.start()
         app.audio.start()
         app.power.start()
@@ -63,7 +73,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated { self?.island?.reposition() }
         }
 
-        if app.settings.sayHello {
+        // Just restarted after an update: say so, instead of the usual hello.
+        let defaults = UserDefaults.standard
+        if let version = defaults.string(forKey: UpdateService.justUpdatedKey) {
+            defaults.removeObject(forKey: UpdateService.justUpdatedKey)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                MainActor.assumeIsolated { app.alerts.show(.updated(version: version)) }
+            }
+        } else if app.settings.sayHello {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 MainActor.assumeIsolated { app.alerts.show(.welcome) }
             }

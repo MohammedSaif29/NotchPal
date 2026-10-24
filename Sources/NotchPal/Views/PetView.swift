@@ -33,12 +33,29 @@ struct NotchPet: View {
     let app: AppModel
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { context in
-            let mood = PetMood.current(app, now: context.date)
-            let tint = app.accent
-            Canvas { graphics, size in
-                PetArt.draw(mood: mood, time: context.date.timeIntervalSinceReferenceDate,
-                            tint: tint, in: &graphics, size: size)
+        // Reduce Motion in macOS keeps Pal still, whatever the setting says.
+        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let motion = reduced ? PetMotion.still : app.settings.petMotion
+        Group {
+            if motion == .still {
+                // No animation at all: it only redraws when its mood changes.
+                let mood = PetMood.current(app, now: Date())
+                let tint = app.accent
+                Canvas { graphics, size in
+                    PetArt.draw(mood: mood, time: 0, energy: 0, tint: tint, in: &graphics, size: size)
+                }
+            } else {
+                // Calm Pal moves slowly and draws fewer frames, so it's gentle on the eyes (and the battery).
+                let fps: Double = motion == .lively ? 20 : 8
+                TimelineView(.animation(minimumInterval: 1.0 / fps)) { context in
+                    let mood = PetMood.current(app, now: context.date)
+                    let tint = app.accent
+                    let seconds = context.date.timeIntervalSinceReferenceDate
+                    Canvas { graphics, size in
+                        PetArt.draw(mood: mood, time: motion == .lively ? seconds : seconds * 0.45,
+                                    energy: motion == .lively ? 1 : 0.35, tint: tint, in: &graphics, size: size)
+                    }
+                }
             }
         }
         .frame(width: 34, height: 26)
@@ -47,7 +64,12 @@ struct NotchPet: View {
 }
 
 enum PetArt {
-    static func draw(mood: PetMood, time t: Double, tint: Color, in context: inout GraphicsContext, size: CGSize) {
+    /// Pal's body colour: a soft white rather than pure white, so it doesn't glare against the black notch.
+    static let skin = Color(white: 0.9)
+
+    /// `energy` is how much Pal moves: 1 is lively, 0 is completely still.
+    static func draw(mood: PetMood, time t: Double, energy: CGFloat = 1, tint: Color,
+                     in context: inout GraphicsContext, size: CGSize) {
         // Body movement for each mood.
         var bob: CGFloat = 0
         var squash: CGFloat = 1
@@ -66,24 +88,28 @@ enum PetArt {
         case .idle, .focused:
             squash = 1 + CGFloat(sin(t * 2.2)) * 0.025
         }
+        bob *= energy
+        squash = 1 + (squash - 1) * energy
 
         let width = 18 * (2 - squash)
         let height = 15 * squash
         let body = CGRect(x: (size.width - width) / 2, y: size.height - height - 2 + bob, width: width, height: height)
-        context.fill(Path(roundedRect: body, cornerRadius: 6), with: .color(.white))
+        context.fill(Path(roundedRect: body, cornerRadius: 6), with: .color(skin))
 
         // Eyes
         let eyeY = body.minY + height * 0.42
         var left = CGPoint(x: body.minX + width * 0.34, y: eyeY)
         var right = CGPoint(x: body.minX + width * 0.66, y: eyeY)
-        let blinking = t.truncatingRemainder(dividingBy: 4.3) < 0.14
+        let blinking = energy > 0 && t.truncatingRemainder(dividingBy: 4.3) < 0.14
 
         switch mood {
         case .sleepy:
             line(from: left, width: 3.4, in: &context)
             line(from: right, width: 3.4, in: &context)
-            floatingText("z", phase: t * 0.5, from: CGPoint(x: body.maxX + 2, y: body.minY + 2),
-                         color: .white, in: &context)
+            if energy > 0 {
+                floatingText("z", phase: t * 0.5, from: CGPoint(x: body.maxX + 2, y: body.minY + 2),
+                             color: skin, in: &context)
+            }
         case .dancing, .munching:
             chevron(at: left, in: &context)
             chevron(at: right, in: &context)
@@ -116,19 +142,23 @@ enum PetArt {
         let mouthCenter = CGPoint(x: body.midX, y: body.minY + height * 0.72)
         switch mood {
         case .munching:
-            let open = 0.8 + CGFloat(abs(sin(t * 10))) * 2
+            let open = 0.8 + CGFloat(abs(sin(t * 10))) * 2 * energy
             context.fill(Path(ellipseIn: CGRect(x: mouthCenter.x - 1.6, y: mouthCenter.y - open / 2, width: 3.2, height: open)),
                          with: .color(.black))
-            floatingText("⚡", phase: t * 0.7, from: CGPoint(x: body.minX - 4, y: body.minY + 3),
-                         color: .yellow, in: &context)
+            if energy > 0 {
+                floatingText("⚡", phase: t * 0.7, from: CGPoint(x: body.minX - 4, y: body.minY + 3),
+                             color: .yellow, in: &context)
+            }
         case .dancing:
             var smile = Path()
             smile.move(to: CGPoint(x: mouthCenter.x - 2, y: mouthCenter.y - 0.5))
             smile.addQuadCurve(to: CGPoint(x: mouthCenter.x + 2, y: mouthCenter.y - 0.5),
                                control: CGPoint(x: mouthCenter.x, y: mouthCenter.y + 2))
             context.stroke(smile, with: .color(.black), lineWidth: 1)
-            floatingText("♪", phase: t * 0.8, from: CGPoint(x: body.maxX + 3, y: body.minY + 4),
-                         color: tint, in: &context)
+            if energy > 0 {
+                floatingText("♪", phase: t * 0.8, from: CGPoint(x: body.maxX + 3, y: body.minY + 4),
+                             color: tint, in: &context)
+            }
         case .worried:
             var wobble = Path()
             wobble.move(to: CGPoint(x: mouthCenter.x - 2, y: mouthCenter.y + 0.5))

@@ -163,25 +163,48 @@ struct ClockLabel: View {
     }
 }
 
-/// Content fades in with a blur once the island has grown, and fades out quickly,
-/// the way the iPhone's island reveals its content.
+/// Content appears once the island has grown, and disappears quickly, the way the
+/// iPhone's island reveals its content. The style is picked in Settings → Look & Glass.
 private struct IslandContentReveal: ViewModifier {
     let shown: Bool
+    let style: RevealStyle
 
     func body(content: Content) -> some View {
-        content
-            .blur(radius: shown ? 0 : 10)
-            .opacity(shown ? 1 : 0)
-            .scaleEffect(shown ? 1 : 0.92, anchor: .top)
+        switch style {
+        case .blur:
+            content
+                .blur(radius: shown ? 0 : 10)
+                .opacity(shown ? 1 : 0)
+                .scaleEffect(shown ? 1 : 0.92, anchor: .top)
+        case .fade:
+            content
+                .opacity(shown ? 1 : 0)
+        case .slide:
+            content
+                .opacity(shown ? 1 : 0)
+                .offset(y: shown ? 0 : -14)
+        case .pop:
+            content
+                .opacity(shown ? 1 : 0)
+                .scaleEffect(shown ? 1 : 0.6, anchor: .top)
+        }
     }
 }
 
 extension AnyTransition {
-    static var islandContent: AnyTransition {
-        .asymmetric(
-            insertion: .modifier(active: IslandContentReveal(shown: false), identity: IslandContentReveal(shown: true))
-                .animation(.easeOut(duration: 0.3).delay(0.08)),
-            removal: .modifier(active: IslandContentReveal(shown: false), identity: IslandContentReveal(shown: true))
+    @MainActor
+    static func islandContent(_ style: RevealStyle) -> AnyTransition {
+        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let chosen: RevealStyle = reduced ? .fade : style
+        let appear: Animation = chosen == .pop
+            ? .spring(response: 0.38, dampingFraction: 0.7).delay(0.06)
+            : .easeOut(duration: chosen == .fade ? 0.22 : 0.3).delay(0.08)
+        return .asymmetric(
+            insertion: .modifier(active: IslandContentReveal(shown: false, style: chosen),
+                                 identity: IslandContentReveal(shown: true, style: chosen))
+                .animation(appear),
+            removal: .modifier(active: IslandContentReveal(shown: false, style: chosen),
+                               identity: IslandContentReveal(shown: true, style: chosen))
                 .animation(.easeIn(duration: 0.12))
         )
     }

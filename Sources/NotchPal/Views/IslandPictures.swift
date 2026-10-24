@@ -105,7 +105,7 @@ private struct OpenIslandPicture: View {
 
     var body: some View {
         let notch = app.state.notch
-        let size = CGSize(width: max(CGFloat(app.settings.openWidth), notch.width + 300),
+        let size = CGSize(width: max(CGFloat(app.settings.openWidth), notch.width + 260),
                           height: notch.height + IslandLayout.openHeight(app))
         let shape = NotchShape(topRadius: 14, bottomRadius: CGFloat(app.settings.cornerRadius))
         PictureBackdrop {

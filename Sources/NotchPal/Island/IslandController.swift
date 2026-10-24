@@ -78,8 +78,23 @@ final class IslandController {
         pollTimer = poll
     }
 
-    /// The area of the screen the island covers right now, in screen coordinates.
+    /// The area of the screen that takes the mouse right now, in screen coordinates.
+    ///
+    /// While the island is closed, only the notch itself reacts. The wings either side are just for
+    /// looking at, so clicks go straight through to the menu bar items underneath them.
     private func hitArea(on frame: NSRect) -> NSRect {
+        let notch = app.state.notch
+        if app.state.mode == .collapsed && IslandLayout.content(app) != .drop {
+            if case .alert = IslandLayout.content(app) {
+                // Alerts can have buttons (like Join), so they take clicks while they're showing.
+            } else {
+                // On a Mac without a notch, a thin strip at the top edge, so menu bar items stay clickable.
+                let zoneHeight: CGFloat = notch.hasNotch ? max(notch.height, 6) : 5
+                return NSRect(x: frame.midX - notch.width / 2, y: frame.maxY - zoneHeight,
+                              width: notch.width, height: zoneHeight)
+                    .insetBy(dx: -2, dy: -2)
+            }
+        }
         let geometry = IslandLayout.geometry(app)
         let width = geometry.size.width + geometry.topRadius * 2
         var area = NSRect(x: frame.midX - width / 2, y: frame.maxY - geometry.size.height,
@@ -89,13 +104,6 @@ final class IslandController {
             area = area.union(NSRect(x: frame.midX + width / 2 + IslandLayout.bubbleGap,
                                      y: frame.maxY - geometry.bubble,
                                      width: bubbleWidth, height: geometry.bubble))
-        }
-        if app.state.mode == .collapsed {
-            // Always keep a hover zone where the notch is, even when nothing is showing.
-            let notch = app.state.notch
-            let zoneHeight = max(notch.height, 6)
-            area = area.union(NSRect(x: frame.midX - notch.width / 2, y: frame.maxY - zoneHeight,
-                                     width: notch.width, height: zoneHeight))
         }
         return area.insetBy(dx: -4, dy: -4)
     }
@@ -154,7 +162,10 @@ final class IslandController {
         case .expanded:
             // Opened by a click or from the menu: stay open a moment even if the mouse isn't there yet.
             lastInside = Date().addingTimeInterval(1.5)
-            panel.makeKey()
+            // Take the keyboard (for games and Esc), unless you're busy in NotchPal's Settings window.
+            if NSApp.keyWindow == nil || NSApp.keyWindow === panel {
+                panel.makeKey()
+            }
             app.alerts.dismissTransient()
             if haptics {
                 NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)

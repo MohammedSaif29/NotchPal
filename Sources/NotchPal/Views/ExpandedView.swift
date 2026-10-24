@@ -54,6 +54,13 @@ struct ExpandedView: View {
                     }
                     .buttonStyle(PressableStyle())
                     .help("Settings")
+                    .contextMenu {
+                        Button("Choose Tabs…") { openTabSettings() }
+                        Button("Settings…") {
+                            app.closeIsland()
+                            app.openSettings?()
+                        }
+                    }
                 }
             }
             .frame(height: max(state.notch.height, 28))
@@ -97,6 +104,36 @@ struct ExpandedView: View {
                 app.state.tab = tab
             }
         }
+        // Right-click any tab to hide it or move it.
+        .contextMenu {
+            Button("Hide \(tab.title)") { hide(tab) }
+                .disabled(app.settings.visibleTabs.count <= 1)
+            Button("Move Left") {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) { app.settings.moveVisibleTab(tab, by: -1) }
+            }
+            .disabled(app.settings.visibleTabs.first == tab)
+            Button("Move Right") {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) { app.settings.moveVisibleTab(tab, by: 1) }
+            }
+            .disabled(app.settings.visibleTabs.last == tab)
+            Divider()
+            Button("Choose Tabs…") { openTabSettings() }
+        }
+    }
+
+    private func hide(_ tab: IslandTab) {
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) {
+            app.settings.setTab(tab, visible: false)
+            if app.state.tab == tab {
+                app.state.tab = app.settings.visibleTabs.first ?? .home
+            }
+        }
+    }
+
+    private func openTabSettings() {
+        app.settingsNavigation.page = .widgets
+        app.closeIsland()
+        app.openSettings?()
     }
 
     /// A little red dot on the Notifications tab when something is unread.

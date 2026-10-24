@@ -22,6 +22,8 @@ final class AppModel {
     let calendar: CalendarService
     let games: GameHub
     let settingsNavigation = SettingsNavigation()
+    let updates = UpdateService()
+    let brightness = BrightnessService()
 
     /// Set by the app delegate.
     var openSettings: (@MainActor () -> Void)?

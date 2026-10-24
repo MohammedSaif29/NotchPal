@@ -301,6 +301,18 @@ private struct AppearanceSettings: View {
                 }
             }
 
+            Section("Brightness") {
+                SliderRow(title: "Closed notch", value: $settings.closedBrightness, range: 0.3...1, step: 0.05) {
+                    "\(Int(($0 * 100).rounded()))%"
+                }
+                SliderRow(title: "Open island", value: $settings.openBrightness, range: 0.5...1, step: 0.05) {
+                    "\(Int(($0 * 100).rounded()))%"
+                }
+                Text("Dims the icons and text in the notch. Lower is easier on your eyes, especially at night.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Motion") {
                 Picker("Animation", selection: $settings.motion) {
                     ForEach(MotionStyle.allCases) { motion in
@@ -308,10 +320,22 @@ private struct AppearanceSettings: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                Text(settings.motion.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Content appears with", selection: $settings.reveal) {
+                    ForEach(RevealStyle.allCases) { style in
+                        Text(style.label).tag(style)
+                    }
+                }
+                .pickerStyle(.segmented)
                 SliderRow(title: "Shadow", value: $settings.shadowStrength, range: 0...1, step: 0.05) {
                     "\(Int(($0 * 100).rounded()))%"
                 }
                 HStack {
+                    Text("Reduce Motion in System Settings → Accessibility makes everything a quick fade.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
                     Button("Try it on the notch") { app.openIsland(tab: .home, hold: 4) }
                 }
@@ -469,15 +493,23 @@ private struct SizeSettings: View {
                 SliderRow(title: "Width", value: $settings.openWidth, range: 480...800, step: 10)
                 SliderRow(title: "Length", value: $settings.openHeight, range: 150...320, step: 5)
                 SliderRow(title: "Corner roundness", value: $settings.cornerRadius, range: 12...56, step: 1)
+                Text("The island opens on your notch while you drag, so you can see the change.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+            .onChange(of: settings.openWidth) { showOpenIsland() }
+            .onChange(of: settings.openHeight) { showOpenIsland() }
+            .onChange(of: settings.cornerRadius) { showOpenIsland() }
 
             Section("Closed island") {
                 SliderRow(title: "Wing width", value: $settings.wingWidth, range: 44...120, step: 2)
                 SliderRow(title: "Extra height", value: $settings.closedExtraHeight, range: 0...14, step: 1)
-                Text("Wings are the parts either side of the camera that show music, timers, the battery and your pet.")
+                Text("Wings are the parts either side of the camera that show music, timers, the battery and your pet. They change on your notch right away.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .onChange(of: settings.wingWidth) { app.closeIsland() }
+            .onChange(of: settings.closedExtraHeight) { app.closeIsland() }
 
             Section {
                 HStack {
@@ -487,6 +519,15 @@ private struct SizeSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// Opens the island for a moment, without stealing the keyboard from Settings.
+    private func showOpenIsland() {
+        if app.state.mode == .expanded {
+            app.state.holdOpenUntil = Date().addingTimeInterval(2.5)
+        } else {
+            app.openIsland(tab: .home, hold: 2.5)
+        }
     }
 }
 
@@ -519,7 +560,7 @@ private struct WidgetSettings: View {
             } header: {
                 Text("Widgets in the open island")
             } footer: {
-                Text("Turn widgets on or off and change their order. The first ones sit left of the camera, the rest on the right.")
+                Text("Turn widgets on or off and change their order. The first ones sit left of the camera, the rest on the right. Tip: right-click any icon in the open island to hide or move it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -565,6 +606,14 @@ private struct WidgetSettings: View {
             }
 
             Section("In the closed notch") {
+                Toggle(isOn: $settings.closedWings) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Show things beside the notch")
+                        Text("Music, timers, Pal and the battery sit either side of the camera. Turn this off if they cover menu bar icons next to your notch. NotchPal still opens when you hover the notch.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Toggle(isOn: $settings.pet) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Notch pet")
@@ -572,6 +621,17 @@ private struct WidgetSettings: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
+                if settings.pet {
+                    Picker("Pal moves", selection: $settings.petMotion) {
+                        ForEach(PetMotion.allCases) { motion in
+                            Text(motion.label).tag(motion)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text(settings.petMotion.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Toggle(isOn: $settings.privacyDots) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -582,6 +642,23 @@ private struct WidgetSettings: View {
                     }
                 }
                 Text("Battery options are on the Battery page.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Picker("Show the closed island", selection: $settings.noNotchMode) {
+                    ForEach(NoNotchMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+            } header: {
+                Text("On Macs without a notch")
+            } footer: {
+                Text(app.state.notch.hasNotch
+                     ? "Your Mac has a notch, so this doesn't change anything here. It's for Macs and screens without one."
+                     : "Without a notch, the closed island sits on the menu bar. \"Only when I hover\" keeps your menu bar clear: move the pointer to the top middle of the screen to open NotchPal.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -812,6 +889,18 @@ private struct MusicSettings: View {
                 Toggle("Pop up when a new song starts", isOn: $settings.songAlerts)
             }
 
+            Section {
+                Toggle("Show a screen brightness slider under the volume", isOn: $settings.showBrightness)
+            } header: {
+                Text("In the open island")
+            } footer: {
+                Text(app.brightness.isAvailable
+                     ? "Changes your MacBook's built-in screen, like the brightness keys."
+                     : "This Mac's screen brightness can't be changed from NotchPal (for example, an external monitor), so the slider stays hidden.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Music apps") {
                 ForEach(MusicAppCatalog.entries(seen: settings.seenMusicApps)) { entry in
                     HStack(spacing: 10) {
@@ -1011,18 +1100,27 @@ private struct NotificationSettings: View {
 
             if settings.badgesEnabled {
                 Section("Permission") {
-                    if badges.trusted {
+                    if badges.trusted && badges.dockReadable {
                         Label("Accessibility access is on", systemImage: "checkmark.circle.fill")
                             .foregroundStyle(.green)
+                    } else if badges.trusted {
+                        HStack {
+                            Label("Access is on, but the Dock can't be read", systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                            Spacer()
+                            Button("Fix It") { badges.fixPermission() }
+                                .disabled(badges.fixing)
+                        }
                     } else {
                         HStack {
                             Label("Needs Accessibility access", systemImage: "exclamationmark.triangle.fill")
                                 .foregroundStyle(.orange)
                             Spacer()
-                            Button("Allow") { badges.requestAccess() }
+                            Button("Fix It") { badges.fixPermission() }
+                                .disabled(badges.fixing)
                             Button("Open Settings") { badges.openAccessibilitySettings() }
                         }
-                        Text("Turn on NotchPal in Privacy & Security → Accessibility. While you're developing NotchPal, every rebuild counts as a new app, so you may need to switch it off and on again.")
+                        Text("Switch on NotchPal in Privacy & Security → Accessibility. If it's already on, click Fix It: macOS forgets the permission each time NotchPal is updated, even though the switch still looks on.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1030,7 +1128,8 @@ private struct NotificationSettings: View {
 
                 Section("Unread right now") {
                     if badges.badges.isEmpty {
-                        Text(badges.trusted ? "All caught up." : "Waiting for permission.")
+                        Text(!badges.trusted ? "Waiting for permission."
+                             : (badges.dockReadable ? "All caught up." : "The Dock can't be read yet. Click Fix It above."))
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(badges.badges) { badge in
@@ -1106,7 +1205,7 @@ private struct PrivacySettings: View {
             }
 
             Section("What NotchPal never does") {
-                Label("Go online or send anything anywhere", systemImage: "wifi.slash")
+                Label("Send anything about you anywhere (it only asks GitHub if there's a new version)", systemImage: "wifi.slash")
                 Label("Record your camera, microphone or screen", systemImage: "record.circle")
                 Label("Read your messages or notification text", systemImage: "eye.slash")
             }
@@ -1151,6 +1250,24 @@ private struct GamesSettings: View {
                 }
             }
 
+            Section {
+                ForEach(GameKind.allCases) { kind in
+                    Toggle(isOn: Binding(
+                        get: { !settings.hiddenGames.contains(kind.rawValue) },
+                        set: { settings.setGame(kind, visible: $0) }
+                    )) {
+                        Label(kind.title, systemImage: kind.symbol)
+                    }
+                    .disabled(settings.visibleGames == [kind])
+                }
+            } header: {
+                Text("Games in the Games tab")
+            } footer: {
+                Text("Hide the games you don't play. To hide the whole Games tab, go to Widgets, or right-click its icon in the island.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Best scores") {
                 ForEach(GameKind.allCases) { kind in
                     LabeledContent {
@@ -1183,8 +1300,15 @@ private struct AboutSettings: View {
     }
 
     var body: some View {
+        ScrollView {
+            aboutContent
+                .frame(maxWidth: .infinity)
+                .padding(24)
+        }
+    }
+
+    private var aboutContent: some View {
         VStack(spacing: 14) {
-            Spacer(minLength: 0)
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(LinearGradient(colors: [Color(white: 0.2), .black], startPoint: .top, endPoint: .bottom))
@@ -1213,17 +1337,19 @@ private struct AboutSettings: View {
                 LinkButton(title: "LinkedIn", symbol: "person.crop.circle.fill", url: Credits.linkedIn)
                 LinkButton(title: "GitHub", symbol: "chevron.left.forwardslash.chevron.right", url: Credits.github)
                 LinkButton(title: "Report a Problem", symbol: "ladybug.fill", url: Credits.reportProblem)
-                LinkButton(title: "Updates", symbol: "arrow.down.circle.fill", url: Credits.releases)
+                LinkButton(title: "Release Notes", symbol: "doc.text.fill", url: Credits.releases)
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 Label("Free and open source (GNU GPLv3)", systemImage: "heart.fill")
-                Label("Never goes online by itself, and collects nothing", systemImage: "lock.shield.fill")
+                Label("Only goes online to check for updates, and collects nothing", systemImage: "lock.shield.fill")
                 Label("No account, no ads, no tracking", systemImage: "hand.raised.fill")
             }
             .font(.callout)
             .padding(16)
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.05)))
+
+            UpdatesBox(app: app)
 
             Button {
                 IslandPictures.save(app: app)
@@ -1236,14 +1362,105 @@ private struct AboutSettings: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
     }
 }
 
-/// A button that opens a web page in your browser. NotchPal itself never connects anywhere.
+/// Check for updates, and update with one click.
+private struct UpdatesBox: View {
+    let app: AppModel
+    @Bindable private var settings: SettingsStore
+
+    init(app: AppModel) {
+        self.app = app
+        _settings = Bindable(wrappedValue: app.settings)
+    }
+
+    var body: some View {
+        let updates = app.updates
+        HStack(spacing: 12) {
+            Image(systemName: symbol(updates.status))
+                .font(.system(size: 20))
+                .foregroundStyle(color(updates.status))
+                .frame(width: 26)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headline(updates))
+                    .font(.system(size: 13, weight: .semibold))
+                Text(detail(updates))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Toggle("Check for updates once a day", isOn: $settings.autoCheckUpdates)
+                    .toggleStyle(.checkbox)
+                    .font(.caption)
+                    .onChange(of: settings.autoCheckUpdates) { updates.setAutomatic(settings.autoCheckUpdates) }
+            }
+            Spacer(minLength: 8)
+            switch updates.status {
+            case .available:
+                Button("Update & Restart") {
+                    app.alerts.show(.updating)
+                    updates.install()
+                }
+                .buttonStyle(.borderedProminent)
+            case .checking, .downloading, .installing:
+                ProgressView()
+                    .controlSize(.small)
+            default:
+                Button("Check Now") { updates.check() }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: 520)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.05)))
+    }
+
+    private func headline(_ updates: UpdateService) -> String {
+        switch updates.status {
+        case .available(let release): "NotchPal \(release.version) is available"
+        case .checking: "Checking for updates…"
+        case .downloading: "Downloading the update…"
+        case .installing: "Installing. NotchPal restarts in a moment…"
+        case .upToDate: "You have the latest version"
+        case .failed: "Something went wrong"
+        case .idle: "Updates"
+        }
+    }
+
+    private func detail(_ updates: UpdateService) -> String {
+        switch updates.status {
+        case .failed(let message):
+            return message
+        case .available:
+            return "Your settings stay as they are. NotchPal restarts by itself."
+        default:
+            if let checked = updates.lastChecked {
+                return "Version \(updates.currentVersion) · Last checked \(checked.formatted(.relative(presentation: .named)))"
+            }
+            return "Version \(updates.currentVersion)"
+        }
+    }
+
+    private func symbol(_ status: UpdateService.Status) -> String {
+        switch status {
+        case .available: "arrow.down.circle.fill"
+        case .failed: "exclamationmark.triangle.fill"
+        case .upToDate: "checkmark.circle.fill"
+        default: "arrow.triangle.2.circlepath"
+        }
+    }
+
+    private func color(_ status: UpdateService.Status) -> Color {
+        switch status {
+        case .available: .accentColor
+        case .failed: .orange
+        case .upToDate: .green
+        default: .secondary
+        }
+    }
+}
+
+/// A button that opens a web page in your browser.
 private struct LinkButton: View {
     let title: String
     let symbol: String

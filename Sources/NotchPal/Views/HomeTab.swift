@@ -86,8 +86,13 @@ struct MusicCard: View {
 
                 Spacer(minLength: 6)
 
-                VolumeControl(audio: app.audio, scale: s)
-                    .frame(maxWidth: 170 * s)
+                VStack(spacing: 5 * s) {
+                    VolumeControl(audio: app.audio, scale: s)
+                    if app.settings.showBrightness && app.brightness.isAvailable {
+                        BrightnessControl(brightness: app.brightness, scale: s)
+                    }
+                }
+                .frame(maxWidth: 170 * s)
             }
         }
         .padding(12 * s)
@@ -186,6 +191,28 @@ struct VolumeControl: View {
         if audio.volume < 0.34 { return "speaker.wave.1.fill" }
         if audio.volume < 0.67 { return "speaker.wave.2.fill" }
         return "speaker.wave.3.fill"
+    }
+}
+
+/// Screen brightness, under the volume. Drag to change it, like Control Center on iPhone.
+struct BrightnessControl: View {
+    let brightness: BrightnessService
+    var scale: CGFloat = 1
+
+    var body: some View {
+        HStack(spacing: 6 * scale) {
+            Image(systemName: brightness.level < 0.5 ? "sun.min.fill" : "sun.max.fill")
+                .font(.system(size: 11 * scale, weight: .semibold))
+                .frame(width: 18 * scale, height: 18 * scale)
+            CapsuleSlider(value: brightness.level, tint: .white, onChange: { brightness.set($0) })
+            // Lines the slider up with the volume slider above it.
+            Color.clear
+                .frame(width: 16 * scale, height: 1)
+        }
+        .foregroundStyle(.white.opacity(0.85))
+        .help("Screen brightness")
+        .onAppear { brightness.startWatching() }
+        .onDisappear { brightness.stopWatching() }
     }
 }
 

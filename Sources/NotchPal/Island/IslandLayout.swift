@@ -40,8 +40,15 @@ enum IslandLayout {
         if app.state.mode == .expanded { return .expanded }
         if app.state.isDropTargeted { return .drop }
         if let alert = app.alerts.current { return .alert(alert) }
-        if hasLiveActivity(app) || hasAmbient(app) { return .compact }
+        if showsClosedContent(app) && (hasLiveActivity(app) || hasAmbient(app)) { return .compact }
         return .idle
+    }
+
+    /// On Macs without a notch the closed island would sit on top of menu bar items, so by default
+    /// it stays hidden there until you hover the top middle of the screen.
+    static func showsClosedContent(_ app: AppModel) -> Bool {
+        guard app.settings.closedWings else { return false }
+        return app.state.notch.hasNotch || app.settings.noNotchMode == .menuBar
     }
 
     /// The Mirror tab makes the island a bit taller, so your whole face fits.
@@ -117,7 +124,7 @@ enum IslandLayout {
         switch content(app) {
         case .expanded:
             return IslandGeometry(
-                size: CGSize(width: max(CGFloat(settings.openWidth), notch.width + 300),
+                size: CGSize(width: max(CGFloat(settings.openWidth), notch.width + 260),
                              height: notch.height + openHeight(app)),
                 topRadius: 14, bottomRadius: CGFloat(settings.cornerRadius), bubble: 0
             )
@@ -137,7 +144,7 @@ enum IslandLayout {
             if hasLiveActivity(app) {
                 wing = CGFloat(settings.wingWidth)
             } else if settings.pet || showsBattery(app) {
-                wing = max(56, CGFloat(settings.wingWidth) * 0.85)
+                wing = max(44, CGFloat(settings.wingWidth) * 0.85)
             } else {
                 wing = 26 // Only the privacy dots.
             }

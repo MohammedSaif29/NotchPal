@@ -35,32 +35,36 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 
 **Start at login:** Settings → General → Open NotchPal at login.
 
-**Update:** download the new zip and replace the app in Applications. Your settings stay.
+**Update:** when a new version is out, NotchPal tells you in the notch. Click **Update** and it downloads, checks and installs it, then restarts by itself. Your settings stay. You can also use the menu bar icon → Check for Updates. (Updating from 0.4.0? Download 0.5.0 once by hand; after that it updates itself.)
 
 **Uninstall:** click the capsule icon in the menu bar → Quit NotchPal, then drag NotchPal from Applications to the Trash.
 
-## What it does (v0.4)
+## What it does (v0.5)
 
 **In the closed notch**
 - **Music from any app** with album art and a visualizer tinted to the cover. Swipe sideways on the island to change songs.
 - **Battery, your way**: show it always, unplugged, when low, or while charging. Pick a clean style (a thin Ring, an iPhone-style Pill, the Classic battery, or just the Number) with iPhone colours (white, green while charging, yellow in Low Power Mode, red when low) or any colour you like. Six emoji packs are there too, if you want something playful.
-- **Pal, the notch pet**: dances to music, munches electricity while charging, sweats when the battery is low, and naps late at night.
+- **Pal, the notch pet**: dances to music, munches electricity while charging, sweats when the battery is low, and naps late at night. Choose Lively, Calm or Still.
+- **Easy on the eyes**: brightness sliders for the closed notch and the open island, a soft white Pal, and Reduce Motion support.
+- **Updates itself**: when a new version is out, the notch tells you. One click downloads it, checks it and restarts NotchPal, like an app update on your phone.
+- **Stays out of your way**: the closed island never blocks clicks on the menu bar items next to it, and on Macs without a notch it stays hidden until you hover the top middle of the screen.
 - **Privacy dots**: green while any app uses the camera, orange for the microphone, like iPhone.
 - **Two live activities at once**: with music and a timer running, the timer splits into its own bubble.
 - **Live alerts**: charging, low battery, AirPods, new song, meetings about to start (with a Join button), new messages, timer done.
 
-**Widgets in the open island** (turn them on, off and reorder them in Settings)
-- **Music**: the same player for every app (Spotify, Apple Music, YouTube in your browser, VLC and more), with the app's icon on the album art, seek bar, play/pause, volume, speaker/AirPods picker, AirDrop and battery card. Choose which apps can show in the notch.
+**Widgets in the open island** (turn them on, off and reorder them in Settings, or right-click any icon in the island to hide or move it)
+- **Music**: the same player for every app (Spotify, Apple Music, YouTube in your browser, VLC and more), with the app's icon on the album art, seek bar, play/pause, volume, screen brightness, speaker/AirPods picker, AirDrop and battery card. Choose which apps can show in the notch.
 - **Calendar**: today's events with one-click Join for Zoom, Meet, Teams, FaceTime and Webex.
 - **Mirror**: check yourself before a call, in a round or rectangle mirror right under the camera, with the camera's real proportions so your head is never cut off. Turn on Centre Stage, play Reactions (hearts, balloons, confetti…), switch cameras (like your iPhone), open Desk View, and see Portrait, Studio Light and Background at a glance, with macOS's Video Effects panel one click away. The camera is only on while the tab is open, and nothing is recorded.
 - **Apps**: your favourite apps, one click away.
 - **Notifications**: unread counts from Messages, WhatsApp, Mail, Slack and any other Dock app.
 - **Notes**: a scratchpad that saves itself.
-- **Timer** and **Games** (Runner, Flappy, Snake, Pong, each with Easy/Normal/Hard).
+- **Timer** and **Games** (Runner, Flappy, Snake, Pong, each with Easy/Normal/Hard). Pick which games show up.
 
 **Settings**
 - Size: open width and length, corner roundness, closed wing width and height.
-- Look: Black, Liquid Glass, Frosted or Clear, with darkness, tint colour, shiny edge, glass when closed, shadow, animation style and accent colour.
+- Look: Black, Liquid Glass, Frosted or Clear, with darkness, tint colour, shiny edge, glass when closed, shadow and accent colour.
+- Motion: Snappy, Smooth, Gentle, Liquid or Bouncy, and content that appears with a Blur, Fade, Slide or Pop.
 
 ## Pictures
 
@@ -82,7 +86,7 @@ These were made with NotchPal's own **Save Pictures of My Island…** (menu bar 
 
 ## Privacy, and how it works
 
-NotchPal never goes online by itself and collects nothing. The links in About (LinkedIn, GitHub, Report a Problem) only open your browser when you click them.
+NotchPal collects nothing. The only time it goes online by itself is to ask GitHub, once a day, whether there's a new version. That request contains nothing about you or your Mac, and you can switch it off in Settings → About. The links in About (LinkedIn, GitHub, Report a Problem) only open your browser when you click them.
 
 - **Music**: since macOS 15.4 only Apple's own programs may read what's playing, so NotchPal runs a tiny helper inside `/usr/bin/perl` (an Apple program) to read the system's Now Playing info. If Apple blocks that, it falls back to asking Spotify and Apple Music directly.
 - **Notifications**: macOS doesn't let apps read other apps' notifications. With the Accessibility permission, NotchPal reads only the unread counts on Dock icons, never message text.

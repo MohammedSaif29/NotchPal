@@ -61,6 +61,8 @@ enum SizePreset: String, CaseIterable, Identifiable {
 enum MotionStyle: String, CaseIterable, Identifiable {
     case snappy
     case smooth
+    case gentle
+    case liquid
     case bouncy
 
     var id: Self { self }
@@ -69,15 +71,93 @@ enum MotionStyle: String, CaseIterable, Identifiable {
         switch self {
         case .snappy: "Snappy"
         case .smooth: "Smooth"
+        case .gentle: "Gentle"
+        case .liquid: "Liquid"
         case .bouncy: "Bouncy"
         }
     }
 
-    var spring: Animation {
+    var detail: String {
         switch self {
-        case .snappy: .spring(response: 0.3, dampingFraction: 0.86)
-        case .smooth: .spring(response: 0.46, dampingFraction: 0.8)
-        case .bouncy: .spring(response: 0.52, dampingFraction: 0.62)
+        case .snappy: "Quick and crisp."
+        case .smooth: "Like iPhone's Dynamic Island."
+        case .gentle: "Slow and soft, easy on the eyes."
+        case .liquid: "Stretchy, like a drop of water."
+        case .bouncy: "Playful, with a little bounce."
+        }
+    }
+
+    @MainActor
+    var spring: Animation {
+        // With Reduce Motion on in macOS, everything just fades quickly instead.
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            return .easeInOut(duration: 0.18)
+        }
+        switch self {
+        case .snappy: return .spring(response: 0.3, dampingFraction: 0.86)
+        case .smooth: return .spring(response: 0.46, dampingFraction: 0.8)
+        case .gentle: return .spring(response: 0.7, dampingFraction: 0.95)
+        case .liquid: return .spring(response: 0.62, dampingFraction: 0.66, blendDuration: 0.25)
+        case .bouncy: return .spring(response: 0.52, dampingFraction: 0.62)
+        }
+    }
+}
+
+/// How the island's content appears when it opens or changes.
+enum RevealStyle: String, CaseIterable, Identifiable {
+    case blur
+    case fade
+    case slide
+    case pop
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .blur: "Blur"
+        case .fade: "Fade"
+        case .slide: "Slide"
+        case .pop: "Pop"
+        }
+    }
+}
+
+/// How much Pal moves around.
+enum PetMotion: String, CaseIterable, Identifiable {
+    case lively
+    case calm
+    case still
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .lively: "Lively"
+        case .calm: "Calm"
+        case .still: "Still"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .lively: "Bounces, dances and wiggles all the time."
+        case .calm: "Breathes slowly and blinks. Dances gently to music."
+        case .still: "Doesn't move at all. Its face still changes with its mood."
+        }
+    }
+}
+
+/// What the closed island does on Macs without a notch, where it would sit on the menu bar.
+enum NoNotchMode: String, CaseIterable, Identifiable {
+    case hover
+    case menuBar
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .hover: "Only when I hover"
+        case .menuBar: "Always, in the menu bar"
         }
     }
 }
@@ -308,12 +388,19 @@ final class SettingsStore {
     /// Fade the top of a glass island into black, so it looks like it grows out of the notch.
     var glassBlendTop: Bool { didSet { Self.save(glassBlendTop, "glassBlendTop") } }
     var shadowStrength: Double { didSet { Self.save(shadowStrength, "shadowStrength") } }
+    var reveal: RevealStyle { didSet { Self.save(reveal.rawValue, "reveal") } }
+    /// How bright the icons and text in the closed notch are. Lower is easier on the eyes.
+    var closedBrightness: Double { didSet { Self.save(closedBrightness, "closedBrightness") } }
+    /// How bright the icons and text in the open island are.
+    var openBrightness: Double { didSet { Self.save(openBrightness, "openBrightness") } }
 
     // Behaviour
     var openOnHover: Bool { didSet { Self.save(openOnHover, "openOnHover") } }
     var hoverDelay: Double { didSet { Self.save(hoverDelay, "hoverDelay") } }
     var haptics: Bool { didSet { Self.save(haptics, "haptics") } }
     var sayHello: Bool { didSet { Self.save(sayHello, "sayHello") } }
+    /// Ask GitHub once a day whether there's a new version.
+    var autoCheckUpdates: Bool { didSet { Self.save(autoCheckUpdates, "autoCheckUpdates") } }
     var swipeGestures: Bool { didSet { Self.save(swipeGestures, "swipeGestures") } }
 
     // Widgets (tabs in the open island)
@@ -324,12 +411,20 @@ final class SettingsStore {
 
     // Closed notch extras
     var pet: Bool { didSet { Self.save(pet, "pet") } }
+    /// Show music, timers, Pal and the battery beside the notch. Off keeps the closed island
+    /// inside the notch, so it never covers menu bar icons.
+    var closedWings: Bool { didSet { Self.save(closedWings, "closedWings") } }
+    var petMotion: PetMotion { didSet { Self.save(petMotion.rawValue, "petMotion") } }
+    /// On Macs without a notch, whether the closed island shows things in the menu bar.
+    var noNotchMode: NoNotchMode { didSet { Self.save(noNotchMode.rawValue, "noNotchMode") } }
     var privacyDots: Bool { didSet { Self.save(privacyDots, "privacyDots") } }
 
     // Music
     var showArtworkInNotch: Bool { didSet { Self.save(showArtworkInNotch, "showArtworkInNotch") } }
     var showVisualizer: Bool { didSet { Self.save(showVisualizer, "showVisualizer") } }
     var songAlerts: Bool { didSet { Self.save(songAlerts, "songAlerts") } }
+    /// A screen brightness slider under the volume in the Music tab.
+    var showBrightness: Bool { didSet { Self.save(showBrightness, "showBrightness") } }
     /// Show the playing app's icon on the album art, like Spotify's logo.
     var showSourceBadge: Bool { didSet { Self.save(showSourceBadge, "showSourceBadge") } }
     /// Apps whose sound never shows in the notch, by bundle ID.
@@ -360,6 +455,8 @@ final class SettingsStore {
     var difficulty: Difficulty { didSet { Self.save(difficulty.rawValue, "difficulty") } }
     var gameSounds: Bool { didSet { Self.save(gameSounds, "gameSounds") } }
     var lastGame: String { didSet { Self.save(lastGame, "lastGame") } }
+    /// Games you've hidden from the Games tab, by name.
+    var hiddenGames: [String] { didSet { Self.save(hiddenGames, "hiddenGames") } }
 
     init() {
         let stored = UserDefaults.standard
@@ -381,11 +478,15 @@ final class SettingsStore {
         glassWhenClosed = stored.object(forKey: "glassWhenClosed") as? Bool ?? false
         glassBlendTop = stored.object(forKey: "glassBlendTop") as? Bool ?? true
         shadowStrength = stored.object(forKey: "shadowStrength") as? Double ?? 0.5
+        reveal = RevealStyle(rawValue: stored.string(forKey: "reveal") ?? "") ?? .blur
+        closedBrightness = Self.clamp(stored.object(forKey: "closedBrightness") as? Double ?? 0.8, 0.3...1)
+        openBrightness = Self.clamp(stored.object(forKey: "openBrightness") as? Double ?? 1, 0.5...1)
 
         openOnHover = stored.object(forKey: "openOnHover") as? Bool ?? true
         hoverDelay = stored.object(forKey: "hoverDelay") as? Double ?? 0.2
         haptics = stored.object(forKey: "haptics") as? Bool ?? true
         sayHello = stored.object(forKey: "sayHello") as? Bool ?? true
+        autoCheckUpdates = stored.object(forKey: "autoCheckUpdates") as? Bool ?? true
         swipeGestures = stored.object(forKey: "swipeGestures") as? Bool ?? true
 
         // Keep the saved order, and add any tabs that are new in this version at the end.
@@ -409,11 +510,15 @@ final class SettingsStore {
         openTo = stored.string(forKey: "openTo") ?? "last"
 
         pet = stored.object(forKey: "pet") as? Bool ?? true
+        closedWings = stored.object(forKey: "closedWings") as? Bool ?? true
+        petMotion = PetMotion(rawValue: stored.string(forKey: "petMotion") ?? "") ?? .calm
+        noNotchMode = NoNotchMode(rawValue: stored.string(forKey: "noNotchMode") ?? "") ?? .hover
         privacyDots = stored.object(forKey: "privacyDots") as? Bool ?? true
 
         showArtworkInNotch = stored.object(forKey: "showArtworkInNotch") as? Bool ?? true
         showVisualizer = stored.object(forKey: "showVisualizer") as? Bool ?? true
         songAlerts = stored.object(forKey: "songAlerts") as? Bool ?? true
+        showBrightness = stored.object(forKey: "showBrightness") as? Bool ?? true
         showSourceBadge = stored.object(forKey: "showSourceBadge") as? Bool ?? true
         hiddenMusicApps = stored.stringArray(forKey: "hiddenMusicApps") ?? []
         seenMusicApps = stored.stringArray(forKey: "seenMusicApps") ?? []
@@ -438,6 +543,7 @@ final class SettingsStore {
         difficulty = Difficulty(rawValue: stored.string(forKey: "difficulty") ?? "") ?? .normal
         gameSounds = stored.object(forKey: "gameSounds") as? Bool ?? true
         lastGame = stored.string(forKey: "lastGame") ?? "runner"
+        hiddenGames = stored.stringArray(forKey: "hiddenGames") ?? []
     }
 
     /// The tabs to show in the open island, in the user's order. Never empty.
@@ -454,6 +560,31 @@ final class SettingsStore {
             hidden.insert(tab) // Always keep at least one tab.
         }
         hiddenTabs = hidden
+    }
+
+    /// Moves a tab past its visible neighbour, so hidden tabs don't get in the way.
+    func moveVisibleTab(_ tab: IslandTab, by offset: Int) {
+        let visible = visibleTabs
+        guard let index = visible.firstIndex(of: tab), visible.indices.contains(index + offset) else { return }
+        let other = visible[index + offset]
+        var order = tabOrder
+        guard let from = order.firstIndex(of: tab), let to = order.firstIndex(of: other) else { return }
+        order.swapAt(from, to)
+        tabOrder = order
+    }
+
+    /// The games in the Games tab, in order. Never empty.
+    var visibleGames: [GameKind] {
+        let visible = GameKind.allCases.filter { !hiddenGames.contains($0.rawValue) }
+        return visible.isEmpty ? [.runner] : visible
+    }
+
+    func setGame(_ game: GameKind, visible: Bool) {
+        var hidden = hiddenGames.filter { $0 != game.rawValue }
+        if !visible && visibleGames.count > 1 {
+            hidden.append(game.rawValue) // Always keep at least one game.
+        }
+        hiddenGames = hidden
     }
 
     func moveTab(_ tab: IslandTab, by offset: Int) {
@@ -488,6 +619,9 @@ final class SettingsStore {
         glassWhenClosed = false
         glassBlendTop = true
         shadowStrength = 0.5
+        reveal = .blur
+        closedBrightness = 0.8
+        openBrightness = 1
     }
 
     private static func clamp(_ value: Double, _ range: ClosedRange<Double>) -> Double {

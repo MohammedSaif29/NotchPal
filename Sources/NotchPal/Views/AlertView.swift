@@ -54,6 +54,10 @@ struct AlertView: View {
         case .timerDone: "Time's up!"
         case .event(let name, _, _): name
         case .message(let name, _, _): name
+        case .updateAvailable: "Update available"
+        case .updating: "Updating NotchPal…"
+        case .updated: "NotchPal is up to date"
+        case .updateFailed: "The update didn't install"
         }
     }
 
@@ -75,6 +79,14 @@ struct AlertView: View {
             minutes <= 1 ? "Starts in a minute" : "Starts in \(minutes) minutes"
         case .message(_, let count, _):
             count == "•" || Int(count) == nil ? "New notification" : (count == "1" ? "1 new message" : "\(count) unread")
+        case .updateAvailable(let version):
+            "NotchPal \(version) is ready"
+        case .updating:
+            "It restarts by itself in a moment"
+        case .updated(let version):
+            "Now on version \(version)"
+        case .updateFailed:
+            "Your current version is untouched"
         }
     }
 
@@ -119,6 +131,18 @@ struct AlertView: View {
             Image(nsImage: NSWorkspace.shared.icon(forFile: path))
                 .resizable()
                 .frame(width: 32, height: 32)
+        case .updateAvailable, .updating:
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(app.accent)
+        case .updated:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.green)
+        case .updateFailed:
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.orange)
         }
     }
 
@@ -161,7 +185,25 @@ struct AlertView: View {
                 .padding(.horizontal, 8)
                 .frame(minWidth: 24, minHeight: 22)
                 .background(Capsule().fill(Color.red))
-        case .welcome:
+        case .updateAvailable:
+            Button {
+                app.alerts.dismiss(.update)
+                app.alerts.show(.updating)
+                app.updates.install()
+            } label: {
+                Text("Update")
+                    .font(.system(size: 12, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .frame(height: 28)
+                    .foregroundStyle(.black)
+                    .background(Capsule().fill(Color.white))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(PressableStyle())
+        case .updating:
+            ProgressView()
+                .controlSize(.small)
+        case .welcome, .updated, .updateFailed:
             EmptyView()
         }
     }

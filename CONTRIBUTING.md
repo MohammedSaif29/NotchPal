@@ -14,7 +14,7 @@ Thanks for wanting to help!
 
 A few things that keep NotchPal trustworthy:
 
-- NotchPal never goes online by itself and collects nothing. Changes that add tracking, analytics, ads or network calls won't be accepted.
+- NotchPal collects nothing, and the only thing it does online is check GitHub for updates. Changes that add tracking, analytics, ads or other network calls won't be accepted.
 - Keep the copyright header at the top of each file.
 - Swift note: on macOS 27, SwiftUI's `@State` needs a macro plugin that only full Xcode has, so NotchPal stores view state as `State(initialValue:)` values instead. Please follow that pattern.
 

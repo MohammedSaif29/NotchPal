@@ -26,15 +26,29 @@ struct InboxTab: View {
                 InboxMessage(
                     symbol: "hand.raised.fill",
                     title: "One permission needed",
-                    text: "Allow NotchPal under Privacy & Security → Accessibility. It's only used to read the unread counts on your Dock icons.",
-                    button: "Open Settings"
+                    text: "Switch on NotchPal in Privacy & Security → Accessibility. Already on? Click Fix It: macOS forgets the permission each time NotchPal is updated.",
+                    button: badges.fixing ? "Fixing…" : "Fix It",
+                    secondButton: "Open Settings",
+                    secondAction: {
+                        badges.requestAccess()
+                        badges.openAccessibilitySettings()
+                    }
                 ) {
-                    badges.requestAccess()
-                    badges.openAccessibilitySettings()
+                    badges.fixPermission()
+                }
+            } else if !badges.dockReadable {
+                InboxMessage(
+                    symbol: "exclamationmark.triangle.fill",
+                    title: "Can't read the Dock yet",
+                    text: "macOS hasn't let NotchPal see your Dock icons. Click Fix It, then switch NotchPal on in the list that opens.",
+                    button: badges.fixing ? "Fixing…" : "Fix It"
+                ) {
+                    badges.fixPermission()
                 }
             } else if badges.badges.isEmpty {
                 InboxMessage(symbol: "checkmark.seal.fill", title: "All caught up",
-                             text: "No unread notifications in your Dock apps.", button: nil) {}
+                             text: "Apps show up here when their Dock icon has a red badge. Keep the app in your Dock, and check its badges are on in System Settings → Notifications.",
+                             button: nil) {}
             } else {
                 BadgeGrid(app: app)
             }
@@ -87,7 +101,20 @@ private struct InboxMessage: View {
     let title: String
     let text: String
     let button: String?
+    var secondButton: String?
+    var secondAction: (() -> Void)?
     let action: () -> Void
+
+    init(symbol: String, title: String, text: String, button: String?,
+         secondButton: String? = nil, secondAction: (() -> Void)? = nil, action: @escaping () -> Void) {
+        self.symbol = symbol
+        self.title = title
+        self.text = text
+        self.button = button
+        self.secondButton = secondButton
+        self.secondAction = secondAction
+        self.action = action
+    }
 
     var body: some View {
         ViewThatFits(in: .vertical) {
@@ -111,17 +138,26 @@ private struct InboxMessage: View {
                 .foregroundStyle(.white.opacity(0.6))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
-            if let button {
-                Button(action: action) {
-                    Text(button)
-                        .font(.system(size: 12, weight: .semibold))
-                        .padding(.horizontal, 14)
-                        .frame(height: 28)
-                        .background(Capsule().fill(Color.white.opacity(0.16)))
-                        .contentShape(Capsule())
+            HStack(spacing: 8) {
+                if let button {
+                    capsuleButton(button, filled: true, action: action)
                 }
-                .buttonStyle(PressableStyle())
+                if let secondButton, let secondAction {
+                    capsuleButton(secondButton, filled: false, action: secondAction)
+                }
             }
         }
+    }
+
+    private func capsuleButton(_ title: String, filled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.horizontal, 14)
+                .frame(height: 28)
+                .background(Capsule().fill(Color.white.opacity(filled ? 0.2 : 0.08)))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(PressableStyle())
     }
 }

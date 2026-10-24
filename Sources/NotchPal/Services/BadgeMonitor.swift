@@ -29,6 +29,10 @@ final class BadgeMonitor {
     private(set) var badges: [AppBadge] = []
     private(set) var trusted = AXIsProcessTrusted()
     private(set) var enabled = false
+    /// False when the permission is on but the Dock couldn't be read.
+    private(set) var dockReadable = true
+    /// True while Fix It is resetting the permission.
+    private(set) var fixing = false
 
     @ObservationIgnored var onNewBadge: (@MainActor (AppBadge) -> Void)?
 
@@ -62,6 +66,34 @@ final class BadgeMonitor {
         trusted = AXIsProcessTrustedWithOptions(options)
     }
 
+    /// macOS remembers the Accessibility permission for one exact copy of an app. After NotchPal
+    /// is updated, System Settings can still show it switched on while macOS refuses the new copy.
+    /// This clears NotchPal's old entry and asks again, so you can switch it on for real.
+    func fixPermission() {
+        guard !fixing else { return }
+        fixing = true
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.saif.notchpal"
+        queue.async { [weak self] in
+            let reset = Process()
+            reset.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+            reset.arguments = ["reset", "Accessibility", bundleID]
+            reset.standardOutput = FileHandle.nullDevice
+            reset.standardError = FileHandle.nullDevice
+            if (try? reset.run()) != nil {
+                reset.waitUntilExit()
+            }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.fixing = false
+                    self.requestAccess()
+                    self.openAccessibilitySettings()
+                    self.poll()
+                }
+            }
+        }
+    }
+
     func openAccessibilitySettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
@@ -83,16 +115,18 @@ final class BadgeMonitor {
         guard !reading else { return } // The last read is still running.
         reading = true
         queue.async { [weak self] in
-            let current = DockReader.badges()
+            let reading = DockReader.read()
             DispatchQueue.main.async {
-                MainActor.assumeIsolated { self?.finish(current) }
+                MainActor.assumeIsolated { self?.finish(reading.badges, dockItems: reading.items) }
             }
         }
     }
 
-    private func finish(_ current: [AppBadge]) {
+    private func finish(_ current: [AppBadge], dockItems: Int) {
         reading = false
         guard enabled else { return }
+        let readable = dockItems > 0
+        if readable != dockReadable { dockReadable = readable }
         if current != badges { badges = current }
 
         var counts: [String: String] = [:]
@@ -119,24 +153,36 @@ final class BadgeMonitor {
 
 /// Reads badges from the Dock through the Accessibility API.
 private enum DockReader {
-    static func badges() -> [AppBadge] {
+    /// The badges, and how many Dock icons were seen (0 means the Dock couldn't be read).
+    static func read() -> (badges: [AppBadge], items: Int) {
         guard let dock = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else {
-            return []
+            return ([], 0)
         }
         let root = AXUIElementCreateApplication(dock.processIdentifier)
         var found: [AppBadge] = []
-        for list in children(of: root) {
-            for item in children(of: list) {
-                guard let label = attribute(item, "AXStatusLabel") as? String, !label.isEmpty else { continue }
-                let name = attribute(item, "AXTitle") as? String ?? "App"
-                let url = attribute(item, "AXURL") as? URL
-                let path = url?.path ?? "/Applications/\(name).app"
-                if !found.contains(where: { $0.path == path }) {
-                    found.append(AppBadge(name: name, count: label, path: path))
+        var items = 0
+        // The Dock's icons sit a level or two down. Walking a few levels keeps this working
+        // if a macOS update rearranges them.
+        var level = children(of: root)
+        for _ in 0..<4 where !level.isEmpty {
+            var next: [AXUIElement] = []
+            for element in level {
+                if attribute(element, "AXTitle") is String, attribute(element, "AXURL") != nil {
+                    items += 1
                 }
+                if let label = attribute(element, "AXStatusLabel") as? String, !label.isEmpty {
+                    let name = attribute(element, "AXTitle") as? String ?? "App"
+                    let url = attribute(element, "AXURL") as? URL
+                    let path = url?.path ?? "/Applications/\(name).app"
+                    if !found.contains(where: { $0.path == path }) {
+                        found.append(AppBadge(name: name, count: label, path: path))
+                    }
+                }
+                next.append(contentsOf: children(of: element))
             }
+            level = next
         }
-        return found
+        return (found, items)
     }
 
     private static func children(of element: AXUIElement) -> [AXUIElement] {
