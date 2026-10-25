@@ -73,10 +73,13 @@ enum PetArt {
         // Body movement for each mood.
         var bob: CGFloat = 0
         var squash: CGFloat = 1
+        var sway: CGFloat = 0
+        var look: CGFloat = 0
         switch mood {
         case .dancing:
             bob = CGFloat(sin(t * 9)) * 2.2
             squash = 1 + CGFloat(sin(t * 18)) * 0.07
+            sway = CGFloat(sin(t * 4.5)) * 1.6
         case .munching:
             bob = -CGFloat(abs(sin(t * 6))) * 1.4
         case .curious:
@@ -87,19 +90,31 @@ enum PetArt {
             bob = CGFloat(sin(t * 30)) * 0.4 // shivering
         case .idle, .focused:
             squash = 1 + CGFloat(sin(t * 2.2)) * 0.025
+            if mood == .idle && energy > 0.9 {
+                // Lively Pal hops every few seconds (stretching up, squashing on landing)
+                // and looks around in between. Calm Pal only breathes.
+                let cycle = t.truncatingRemainder(dividingBy: 3.4)
+                if cycle < 0.45 {
+                    let hop = cycle / 0.45
+                    bob = -CGFloat(sin(hop * .pi)) * 3.4
+                    squash = 1 + CGFloat(sin(hop * .pi * 2)) * 0.08
+                }
+                look = CGFloat(sin(t * 0.9)) * 1.3
+            }
         }
         bob *= energy
+        sway *= energy
         squash = 1 + (squash - 1) * energy
 
         let width = 18 * (2 - squash)
         let height = 15 * squash
-        let body = CGRect(x: (size.width - width) / 2, y: size.height - height - 2 + bob, width: width, height: height)
+        let body = CGRect(x: (size.width - width) / 2 + sway, y: size.height - height - 2 + bob, width: width, height: height)
         context.fill(Path(roundedRect: body, cornerRadius: 6), with: .color(skin))
 
         // Eyes
         let eyeY = body.minY + height * 0.42
-        var left = CGPoint(x: body.minX + width * 0.34, y: eyeY)
-        var right = CGPoint(x: body.minX + width * 0.66, y: eyeY)
+        var left = CGPoint(x: body.minX + width * 0.34 + look, y: eyeY)
+        var right = CGPoint(x: body.minX + width * 0.66 + look, y: eyeY)
         let blinking = energy > 0 && t.truncatingRemainder(dividingBy: 4.3) < 0.14
 
         switch mood {

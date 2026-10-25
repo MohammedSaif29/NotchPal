@@ -140,7 +140,7 @@ enum PetMotion: String, CaseIterable, Identifiable {
 
     var detail: String {
         switch self {
-        case .lively: "Bounces, dances and wiggles all the time."
+        case .lively: "Hops, looks around and dances to music."
         case .calm: "Breathes slowly and blinks. Dances gently to music."
         case .still: "Doesn't move at all. Its face still changes with its mood."
         }
@@ -158,6 +158,33 @@ enum NoNotchMode: String, CaseIterable, Identifiable {
         switch self {
         case .hover: "Only when I hover"
         case .menuBar: "Always, in the menu bar"
+        }
+    }
+}
+
+/// When the closed island hides itself over a full-screen app on the notch's screen.
+enum FullScreenHide: String, CaseIterable, Identifiable {
+    /// Only while a video or movie plays full screen.
+    case watching
+    /// Whenever any app is full screen.
+    case anyApp
+    case never
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .watching: "While a video plays"
+        case .anyApp: "In any full-screen app"
+        case .never: "Never"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .watching: "Hides while a movie, episode or long video plays full screen, in a video app or your browser. Pause and it comes back a few seconds later. Full-screen browsing, music and work apps keep the island."
+        case .anyApp: "Hides whenever an app is full screen, including your browser and work apps."
+        case .never: "The island stays as it is, even over full-screen movies and games."
         }
     }
 }
@@ -415,9 +442,15 @@ final class SettingsStore {
     /// inside the notch, so it never covers menu bar icons.
     var closedWings: Bool { didSet { Self.save(closedWings, "closedWings") } }
     var petMotion: PetMotion { didSet { Self.save(petMotion.rawValue, "petMotion") } }
+    /// Pal stays in the notch while music plays, dancing beside the music bars.
+    var petWithMusic: Bool { didSet { Self.save(petWithMusic, "petWithMusic") } }
     /// On Macs without a notch, whether the closed island shows things in the menu bar.
     var noNotchMode: NoNotchMode { didSet { Self.save(noNotchMode.rawValue, "noNotchMode") } }
     var privacyDots: Bool { didSet { Self.save(privacyDots, "privacyDots") } }
+    /// When the closed island hides over full-screen apps on the notch's screen.
+    var fullScreenHide: FullScreenHide { didSet { Self.save(fullScreenHide.rawValue, "fullScreenHide") } }
+    /// While hidden, low battery, timers, meetings and messages can still pop down.
+    var fullScreenAlerts: Bool { didSet { Self.save(fullScreenAlerts, "fullScreenAlerts") } }
 
     // Music
     var showArtworkInNotch: Bool { didSet { Self.save(showArtworkInNotch, "showArtworkInNotch") } }
@@ -512,8 +545,11 @@ final class SettingsStore {
         pet = stored.object(forKey: "pet") as? Bool ?? true
         closedWings = stored.object(forKey: "closedWings") as? Bool ?? true
         petMotion = PetMotion(rawValue: stored.string(forKey: "petMotion") ?? "") ?? .calm
+        petWithMusic = stored.object(forKey: "petWithMusic") as? Bool ?? true
         noNotchMode = NoNotchMode(rawValue: stored.string(forKey: "noNotchMode") ?? "") ?? .hover
         privacyDots = stored.object(forKey: "privacyDots") as? Bool ?? true
+        fullScreenHide = FullScreenHide(rawValue: stored.string(forKey: "fullScreenHide") ?? "") ?? .watching
+        fullScreenAlerts = stored.object(forKey: "fullScreenAlerts") as? Bool ?? true
 
         showArtworkInNotch = stored.object(forKey: "showArtworkInNotch") as? Bool ?? true
         showVisualizer = stored.object(forKey: "showVisualizer") as? Bool ?? true

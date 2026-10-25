@@ -31,6 +31,7 @@ final class IslandController {
     private var effectsSeen = false
     private var effectsChecking = false
     private var effectsTicks = 0
+    private let fullScreen = FullScreenWatcher()
 
     init(app: AppModel) {
         self.app = app
@@ -42,6 +43,9 @@ final class IslandController {
         host.autoresizingMask = [.width, .height]
         panel.contentView = host
 
+        fullScreen.onChange = { [weak app] fullScreenApp in
+            app?.state.fullScreenApp = fullScreenApp
+        }
         reposition()
         panel.orderFrontRegardless()
         startWatchingMouse()
@@ -56,6 +60,7 @@ final class IslandController {
         guard let target = notchScreen ?? NSScreen.main ?? NSScreen.screens.first else { return }
         screen = target
         app.state.notch = NotchGeometry.detect(for: target)
+        fullScreen.watch(target)
 
         let frame = target.frame
         let rect = NSRect(
@@ -84,6 +89,8 @@ final class IslandController {
     /// looking at, so clicks go straight through to the menu bar items underneath them.
     private func hitArea(on frame: NSRect) -> NSRect {
         let notch = app.state.notch
+        // Hidden for a full-screen movie, only the notch itself reacts, so hovering it still
+        // brings the island back.
         if app.state.mode == .collapsed && IslandLayout.content(app) != .drop {
             if case .alert = IslandLayout.content(app) {
                 // Alerts can have buttons (like Join), so they take clicks while they're showing.

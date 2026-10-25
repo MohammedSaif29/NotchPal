@@ -86,6 +86,8 @@ struct IslandView: View {
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture { app.openIsland() }
+        case .hidden:
+            Color.clear
         }
     }
 

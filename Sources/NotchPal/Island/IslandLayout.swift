@@ -11,6 +11,8 @@ enum IslandContent: Equatable {
     case alert(IslandAlert)
     case compact
     case idle
+    /// Out of the way of a full-screen movie or game. Draws nothing and takes no clicks.
+    case hidden
 }
 
 /// What the closed island's wings are about.
@@ -39,9 +41,47 @@ enum IslandLayout {
     static func content(_ app: AppModel) -> IslandContent {
         if app.state.mode == .expanded { return .expanded }
         if app.state.isDropTargeted { return .drop }
-        if let alert = app.alerts.current { return .alert(alert) }
+        let hiding = hidesForFullScreen(app)
+        if let alert = app.alerts.current {
+            if !hiding || (app.settings.fullScreenAlerts && alert.showsInFullScreen) {
+                return .alert(alert)
+            }
+        }
+        // Hovering the notch always brings it back, so it's never out of reach.
+        if hiding && app.state.mode == .collapsed { return .hidden }
         if showsClosedContent(app) && (hasLiveActivity(app) || hasAmbient(app)) { return .compact }
         return .idle
+    }
+
+    /// Over a full-screen movie or game, the closed island steps out of the way.
+    static func hidesForFullScreen(_ app: AppModel) -> Bool {
+        guard let fullScreen = app.state.fullScreenApp else { return false }
+        switch app.settings.fullScreenHide {
+        case .never: return false
+        case .anyApp: return true
+        case .watching: return isWatching(app, in: fullScreen)
+        }
+    }
+
+    /// Apps that are for watching, so being full screen means a movie is on.
+    private static let videoPlayers: Set<String> = [
+        "com.apple.TV", "com.apple.QuickTimePlayerX", "com.colliderli.iina",
+        "org.videolan.vlc", "com.firecore.infuse",
+    ]
+
+    /// Songs are short and movies and episodes are long, so music in a full-screen browser
+    /// (YouTube Music, Spotify on the web) keeps the island.
+    private static let shortestVideo: Double = 8 * 60
+
+    /// A video is playing in the full-screen app: a video player, or the browser that's playing
+    /// a movie or an episode. A paused video counts for a few more seconds, so pauses don't flicker.
+    private static func isWatching(_ app: AppModel, in fullScreen: FullScreenApp) -> Bool {
+        guard let bundleID = fullScreen.bundleID else { return false }
+        if videoPlayers.contains(bundleID) { return true }
+        guard app.nowPlaying.showsActivity, let track = app.nowPlaying.track else { return false }
+        // No length at all usually means a live stream or a streaming site that doesn't say.
+        let long = track.duration >= shortestVideo || track.duration <= 0
+        return track.bundleID == bundleID && long
     }
 
     /// On Macs without a notch the closed island would sit on top of menu bar items, so by default
@@ -162,6 +202,9 @@ enum IslandLayout {
                 size: CGSize(width: notch.width + (peek ? 22 : 0), height: closedHeight + (peek ? 5 : 0)),
                 topRadius: 6, bottomRadius: peek ? 13 : 10, bubble: 0
             )
+        case .hidden:
+            // Shrinks up into the top edge of the screen.
+            return IslandGeometry(size: CGSize(width: notch.width, height: 0), topRadius: 6, bottomRadius: 10, bubble: 0)
         }
     }
 }

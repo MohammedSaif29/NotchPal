@@ -35,7 +35,7 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 
 **Start at login:** Settings → General → Open NotchPal at login.
 
-**Update:** when a new version is out, NotchPal tells you in the notch. Click **Update** and it downloads, checks and installs it, then restarts by itself. Your settings stay. You can also use the menu bar icon → Check for Updates. (Updating from 0.4.0? Download 0.5.0 once by hand; after that it updates itself.)
+**Update:** when a new version is out, NotchPal tells you in the notch. Click **Update** and it downloads, checks and installs it, then restarts by itself. Your settings stay. You can also use the menu bar icon → Check for Updates. (Still on 0.4.0? Download the latest version once by hand; from 0.5.0 on, NotchPal updates itself.)
 
 **Uninstall:** click the capsule icon in the menu bar → Quit NotchPal, then drag NotchPal from Applications to the Trash.
 
@@ -47,7 +47,7 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 - **Pal, the notch pet**: dances to music, munches electricity while charging, sweats when the battery is low, and naps late at night. Choose Lively, Calm or Still.
 - **Easy on the eyes**: brightness sliders for the closed notch and the open island, a soft white Pal, and Reduce Motion support.
 - **Updates itself**: when a new version is out, the notch tells you. One click downloads it, checks it and restarts NotchPal, like an app update on your phone.
-- **Stays out of your way**: the closed island never blocks clicks on the menu bar items next to it, and on Macs without a notch it stays hidden until you hover the top middle of the screen.
+- **Stays out of your way**: the closed island never blocks clicks on the menu bar items next to it, it hides while a movie or video plays full screen (hover the notch to bring it back; full-screen browsing and work apps keep it), and on Macs without a notch it stays hidden until you hover the top middle of the screen.
 - **Privacy dots**: green while any app uses the camera, orange for the microphone, like iPhone.
 - **Two live activities at once**: with music and a timer running, the timer splits into its own bubble.
 - **Live alerts**: charging, low battery, AirPods, new song, meetings about to start (with a Join button), new messages, timer done.

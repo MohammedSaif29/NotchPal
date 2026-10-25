@@ -15,7 +15,7 @@ struct CompactWingsView: View {
         HStack(spacing: 0) {
             leading.frame(width: wing)
             Color.clear.frame(width: notch.width)
-            trailing.frame(width: wing)
+            trailing(wing: wing).frame(width: wing)
         }
         .frame(height: size.height)
         .foregroundStyle(.white)
@@ -51,8 +51,11 @@ struct CompactWingsView: View {
         }
     }
 
+    /// Room Pal needs beside the music bars.
+    private static let petBesideMusic: CGFloat = 60
+
     @ViewBuilder
-    private var trailing: some View {
+    private func trailing(wing: CGFloat) -> some View {
         let music = app.nowPlaying
         // The privacy dots sit beside whatever else is here, never on top of it.
         HStack(spacing: 6) {
@@ -65,6 +68,11 @@ struct CompactWingsView: View {
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(app.accent)
                         .contentTransition(.symbolEffect(.replace))
+                }
+                // Pal dances along beside the music.
+                if app.settings.pet && app.settings.petWithMusic && wing >= Self.petBesideMusic {
+                    NotchPet(app: app)
+                        .transition(.scale(scale: 0.4).combined(with: .opacity))
                 }
             case .timer:
                 if app.timer.finished {

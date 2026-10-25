@@ -50,6 +50,14 @@ enum IslandAlert: Hashable {
         }
     }
 
+    /// Whether it still pops down over a full-screen movie or game, when important alerts are on.
+    var showsInFullScreen: Bool {
+        switch self {
+        case .lowBattery, .timerDone, .event, .message, .updating, .updateFailed: true
+        case .welcome, .charging, .device, .nowPlaying, .updateAvailable, .updated: false
+        }
+    }
+
     /// How long it stays. Nil means it waits for you (timer done).
     var duration: TimeInterval? {
         switch self {

@@ -99,6 +99,8 @@ final class IslandState {
     var effectsPanelOpenedAt: Date?
     /// Control Center's big windows from before the panel opened, so the panel can be told apart.
     @ObservationIgnored var effectsBaseline: Set<Int> = []
+    /// The app that's full screen on the notch's screen, if any.
+    var fullScreenApp: FullScreenApp?
 
     var effectsPanelOpen: Bool { effectsPanelOpenedAt != nil }
 }

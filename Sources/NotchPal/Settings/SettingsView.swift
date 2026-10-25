@@ -632,6 +632,19 @@ private struct WidgetSettings: View {
                     Text(settings.petMotion.detail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                        Text("Reduce Motion is on in System Settings → Accessibility → Display, so Pal stays still.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    Toggle(isOn: $settings.petWithMusic) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Dance beside your music")
+                            Text("Pal stays next to the music bars while a song plays. Needs a wing width of at least 60 on the Size page.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 Toggle(isOn: $settings.privacyDots) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -642,6 +655,33 @@ private struct WidgetSettings: View {
                     }
                 }
                 Text("Battery options are on the Battery page.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Picker("Hide the island", selection: $settings.fullScreenHide) {
+                    ForEach(FullScreenHide.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                Text(settings.fullScreenHide.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if settings.fullScreenHide != .never {
+                    Toggle(isOn: $settings.fullScreenAlerts) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Important alerts still pop down")
+                            Text("Low battery, finished timers, meetings and messages. Song changes and the rest wait.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } header: {
+                Text("Movies, videos and games")
+            } footer: {
+                Text("While it's hidden, move the pointer onto the notch and the island comes right back.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
