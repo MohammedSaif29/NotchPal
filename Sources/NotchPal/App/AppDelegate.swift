@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         signal(SIGPIPE, SIG_IGN)
 
         let app = self.app
+        installEditMenu()
         let settingsWindow = SettingsWindowController(app: app)
         self.settingsWindow = settingsWindow
         app.openSettings = { settingsWindow.show() }
@@ -59,10 +60,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         app.power.start()
         app.privacy.start()
         app.calendar.start()
+        app.glow.start()
         app.badges.setEnabled(app.settings.badgesEnabled)
 
         island = IslandController(app: app)
         menuBar = MenuBarController(app: app)
+        if app.settings.launchIntro {
+            app.playIntro()
+        }
 
         // Displays plugged in or out, or resolution changed: find the notch again.
         NotificationCenter.default.addObserver(
@@ -74,17 +79,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Just restarted after an update: say so, instead of the usual hello.
+        // Both wait for the opening animation to finish.
         let defaults = UserDefaults.standard
+        let helloDelay = app.state.introStart != nil ? LaunchIntro.duration - 0.25 : 0.6
         if let version = defaults.string(forKey: UpdateService.justUpdatedKey) {
             defaults.removeObject(forKey: UpdateService.justUpdatedKey)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + helloDelay) {
                 MainActor.assumeIsolated { app.alerts.show(.updated(version: version)) }
             }
         } else if app.settings.sayHello {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + helloDelay) {
                 MainActor.assumeIsolated { app.alerts.show(.welcome) }
             }
         }
+    }
+
+    /// Menu bar apps don't show a menu bar of their own, but text boxes still need an Edit menu for
+    /// copy, paste, cut, select all and undo shortcuts to work. This one is never visible.
+    private func installEditMenu() {
+        let main = NSMenu()
+        let appItem = NSMenuItem()
+        appItem.submenu = NSMenu(title: "NotchPal")
+        main.addItem(appItem)
+
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editItem = NSMenuItem()
+        editItem.submenu = edit
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 
     func applicationWillTerminate(_ notification: Notification) {

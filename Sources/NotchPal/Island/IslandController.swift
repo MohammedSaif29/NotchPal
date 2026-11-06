@@ -329,9 +329,34 @@ final class IslandController {
     private func startWatchingKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             let code = event.keyCode
-            let handled = MainActor.assumeIsolated { self?.handleKey(code) ?? false }
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
+            let fromIsland = event.window
+            let handled = MainActor.assumeIsolated { () -> Bool in
+                guard let self else { return false }
+                if fromIsland === self.panel, self.handleEditShortcut(key, flags: flags) {
+                    return true
+                }
+                return self.handleKey(code)
+            }
             return handled ? nil : event
         }
+    }
+
+    /// ⌘X, ⌘C, ⌘V, ⌘A, ⌘Z and ⇧⌘Z in the island's text boxes, like Notes. A menu bar app has
+    /// no Edit menu on screen, so these shortcuts are passed to the text box here.
+    private func handleEditShortcut(_ key: String, flags: NSEvent.ModifierFlags) -> Bool {
+        guard flags.contains(.command), !flags.contains(.control), !flags.contains(.option) else { return false }
+        let action: Selector
+        switch key {
+        case "x": action = #selector(NSText.cut(_:))
+        case "c": action = #selector(NSText.copy(_:))
+        case "v": action = #selector(NSText.paste(_:))
+        case "a": action = #selector(NSText.selectAll(_:))
+        case "z": action = flags.contains(.shift) ? Selector(("redo:")) : Selector(("undo:"))
+        default: return false
+        }
+        return NSApp.sendAction(action, to: nil, from: panel)
     }
 
     private func handleKey(_ keyCode: UInt16) -> Bool {

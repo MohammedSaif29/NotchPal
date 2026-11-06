@@ -226,6 +226,56 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     }
 }
 
+/// How the light around the notch looks.
+enum GlowStyle: String, CaseIterable, Identifiable {
+    case halo
+    case neon
+    case aurora
+    case ripple
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .halo: "Halo"
+        case .neon: "Neon"
+        case .aurora: "Aurora"
+        case .ripple: "Ripple"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .halo: "A soft light that spills out around the notch."
+        case .neon: "A thin, bright edge with a tight glow, like a neon sign."
+        case .aurora: "Wide, dreamy colours that drift slowly along the edge."
+        case .ripple: "Rings ripple out from the notch in time with what's happening."
+        }
+    }
+}
+
+/// What the glow does when no music, timer, call or alert is lighting it.
+enum GlowIdle: String, CaseIterable, Identifiable {
+    case ember
+    case off
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .ember: "Faint ember"
+        case .off: "Dark"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .ember: "One dim, still colour. Something happening brightens it for a moment, then it settles back."
+        case .off: "No light at all until something happens: music, a timer, the camera or an alert."
+        }
+    }
+}
+
 enum GlassTint: String, CaseIterable, Identifiable {
     case none
     case accent
@@ -421,6 +471,22 @@ final class SettingsStore {
     /// How bright the icons and text in the open island are.
     var openBrightness: Double { didSet { Self.save(openBrightness, "openBrightness") } }
 
+    // Glow
+    var glowEnabled: Bool { didSet { Self.save(glowEnabled, "glowEnabled") } }
+    var glowStyle: GlowStyle { didSet { Self.save(glowStyle.rawValue, "glowStyle") } }
+    var glowBrightness: Double { didSet { Self.save(glowBrightness, "glowBrightness") } }
+    /// Music and videos light it in the album art's colours.
+    var glowMusic: Bool { didSet { Self.save(glowMusic, "glowMusic") } }
+    /// Green for the camera and orange for the microphone.
+    var glowPrivacy: Bool { didSet { Self.save(glowPrivacy, "glowPrivacy") } }
+    /// A running timer turns from green to red.
+    var glowTimer: Bool { didSet { Self.save(glowTimer, "glowTimer") } }
+    /// Charging, low battery, meetings and messages flash it.
+    var glowAlerts: Bool { didSet { Self.save(glowAlerts, "glowAlerts") } }
+    var glowIdle: GlowIdle { didSet { Self.save(glowIdle.rawValue, "glowIdle") } }
+    /// Two sparks trace the notch and light it up when NotchPal starts.
+    var launchIntro: Bool { didSet { Self.save(launchIntro, "launchIntro") } }
+
     // Behaviour
     var openOnHover: Bool { didSet { Self.save(openOnHover, "openOnHover") } }
     var hoverDelay: Double { didSet { Self.save(hoverDelay, "hoverDelay") } }
@@ -514,6 +580,16 @@ final class SettingsStore {
         reveal = RevealStyle(rawValue: stored.string(forKey: "reveal") ?? "") ?? .blur
         closedBrightness = Self.clamp(stored.object(forKey: "closedBrightness") as? Double ?? 0.8, 0.3...1)
         openBrightness = Self.clamp(stored.object(forKey: "openBrightness") as? Double ?? 1, 0.5...1)
+
+        glowEnabled = stored.object(forKey: "glowEnabled") as? Bool ?? true
+        glowStyle = GlowStyle(rawValue: stored.string(forKey: "glowStyle") ?? "") ?? .halo
+        glowBrightness = Self.clamp(stored.object(forKey: "glowBrightness") as? Double ?? 0.75, 0.2...1)
+        glowMusic = stored.object(forKey: "glowMusic") as? Bool ?? true
+        glowPrivacy = stored.object(forKey: "glowPrivacy") as? Bool ?? true
+        glowTimer = stored.object(forKey: "glowTimer") as? Bool ?? true
+        glowAlerts = stored.object(forKey: "glowAlerts") as? Bool ?? true
+        glowIdle = GlowIdle(rawValue: stored.string(forKey: "glowIdle") ?? "") ?? .ember
+        launchIntro = stored.object(forKey: "launchIntro") as? Bool ?? true
 
         openOnHover = stored.object(forKey: "openOnHover") as? Bool ?? true
         hoverDelay = stored.object(forKey: "hoverDelay") as? Double ?? 0.2

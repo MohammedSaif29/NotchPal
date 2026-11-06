@@ -7,6 +7,11 @@
 cd "$(dirname "$0")/.."
 
 touch .rebuild
+# A ".personal" file means this Mac also gets its personal extras (see Scripts/build-app.sh).
+if [[ -f .personal ]]; then
+    export NOTCHPAL_PERSONAL=1
+    echo "Personal build: on"
+fi
 last=""
 echo "NotchPal dev mode: watching for code changes. Press Ctrl+C to stop."
 while true; do

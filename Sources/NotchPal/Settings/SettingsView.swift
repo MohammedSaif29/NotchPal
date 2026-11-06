@@ -9,6 +9,7 @@ import SwiftUI
 enum SettingsPage: String, CaseIterable, Identifiable {
     case general
     case appearance
+    case glow
     case size
     case widgets
     case battery
@@ -25,6 +26,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general: "General"
         case .appearance: "Look & Glass"
+        case .glow: "Glow"
         case .size: "Size"
         case .widgets: "Widgets"
         case .battery: "Battery"
@@ -41,6 +43,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape.fill"
         case .appearance: "paintbrush.fill"
+        case .glow: "sparkles"
         case .size: "arrow.up.left.and.arrow.down.right"
         case .widgets: "square.grid.2x2.fill"
         case .battery: "battery.75percent"
@@ -57,6 +60,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general: .gray
         case .appearance: .purple
+        case .glow: .orange
         case .size: .indigo
         case .widgets: .blue
         case .battery: .green
@@ -109,6 +113,7 @@ struct SettingsView: View {
         switch page {
         case .general: GeneralSettings(app: app)
         case .appearance: AppearanceSettings(app: app)
+        case .glow: GlowSettings(app: app)
         case .size: SizeSettings(app: app)
         case .widgets: WidgetSettings(app: app)
         case .battery: BatterySettings(app: app)
@@ -458,6 +463,141 @@ private struct AccentPicker: View {
         }
         return AnyShapeStyle(AngularGradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red],
                                              center: .center))
+    }
+}
+
+// MARK: Glow
+
+private struct GlowSettings: View {
+    let app: AppModel
+    @Bindable private var settings: SettingsStore
+
+    init(app: AppModel) {
+        self.app = app
+        _settings = Bindable(wrappedValue: app.settings)
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                GlowPreview(app: app)
+                    .frame(height: 150)
+                HStack {
+                    Text(nowLit)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Show it on the notch") { app.glow.showPreview() }
+                }
+            }
+
+            Section {
+                Toggle("Glow around the notch", isOn: $settings.glowEnabled)
+            } footer: {
+                Text("A soft light around the notch. At rest it's one dim, still colour. It only moves for a moment when something happens: a song starts, a timer runs out, the camera turns on or an alert comes in.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Group {
+                Section("Look") {
+                    Picker("Style", selection: $settings.glowStyle) {
+                        ForEach(GlowStyle.allCases) { style in
+                            Text(style.label).tag(style)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text(settings.glowStyle.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    SliderRow(title: "Brightness", value: $settings.glowBrightness, range: 0.2...1, step: 0.05) {
+                        "\(Int(($0 * 100).rounded()))%"
+                    }
+                }
+
+                Section("What lights it up") {
+                    Toggle("Music and videos: pulse in the album's colours as a song starts, then hold its colour", isOn: $settings.glowMusic)
+                    Toggle("Camera and microphone: green or orange, like iPhone", isOn: $settings.glowPrivacy)
+                    Toggle("Timers: green, then yellow, then red as time runs out", isOn: $settings.glowTimer)
+                    Toggle("Alerts: charging, low battery, meetings and messages", isOn: $settings.glowAlerts)
+                }
+
+                Section("At rest") {
+                    Picker("When nothing is happening", selection: $settings.glowIdle) {
+                        ForEach(GlowIdle.allCases) { idle in
+                            Text(idle.label).tag(idle)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text(settings.glowIdle.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if settings.glowIdle == .ember {
+                        AccentPicker(selection: $settings.accent)
+                        Text("The ember's colour is your accent colour. With \"Match album art\" it takes the colour of the last song you played.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .disabled(!settings.glowEnabled)
+
+            Section("When NotchPal starts") {
+                Toggle("Light up the notch", isOn: $settings.launchIntro)
+                HStack {
+                    Text("Two sparks trace your notch, meet in the middle and light it up.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Play it now") { app.playIntro() }
+                }
+            }
+
+            Section {
+                Text("A still glow is drawn once and uses no battery. Reduce Motion or Low Power Mode keeps every glow still, and Reduce Motion skips the opening animation. Over a full-screen movie the glow hides along with the island.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var nowLit: String {
+        guard settings.glowEnabled else { return "The glow is off." }
+        guard let glow = app.glow.current(app, content: IslandLayout.content(app)) else {
+            return "Nothing is lighting it right now."
+        }
+        return "Lit by: \(glow.source.label.prefix(1).lowercased() + glow.source.label.dropFirst())"
+    }
+}
+
+/// A small notch on a dark desktop, glowing with the current colours and style.
+private struct GlowPreview: View {
+    let app: AppModel
+
+    var body: some View {
+        let settings = app.settings
+        let size = CGSize(width: 220, height: 34)
+        let sample = app.glow.current(app, content: .idle)
+            ?? Glow(colors: [GlowColors.pink, GlowColors.purple, GlowColors.cyan],
+                    source: .preview, rhythm: .groove, strength: 1, key: "sample")
+
+        TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
+            ZStack(alignment: .top) {
+                LinearGradient(colors: [Color(red: 0.08, green: 0.09, blue: 0.16), Color(red: 0.02, green: 0.02, blue: 0.05)],
+                               startPoint: .top, endPoint: .bottom)
+                if settings.glowEnabled {
+                    GlowLayers(glow: sample, style: settings.glowStyle, brightness: settings.glowBrightness,
+                               size: size, topRadius: 8, bottomRadius: 13,
+                               time: context.date.timeIntervalSinceReferenceDate)
+                }
+                NotchShape(topRadius: 8, bottomRadius: 13)
+                    .fill(Color.black)
+                    .frame(width: size.width, height: size.height)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .animation(.easeInOut(duration: 0.4), value: sample.key)
     }
 }
 

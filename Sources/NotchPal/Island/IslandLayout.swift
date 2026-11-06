@@ -40,6 +40,8 @@ enum IslandLayout {
 
     static func content(_ app: AppModel) -> IslandContent {
         if app.state.mode == .expanded { return .expanded }
+        // The opening animation traces the real notch, so the island waits in it until that's done.
+        if app.state.introStart != nil { return .idle }
         if app.state.isDropTargeted { return .drop }
         let hiding = hidesForFullScreen(app)
         if let alert = app.alerts.current {

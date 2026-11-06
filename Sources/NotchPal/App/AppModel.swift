@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Mohammed Saif (https://github.com/MohammedSaif29/NotchPal)
 // SPDX-License-Identifier: GPL-3.0-only
 
+import AppKit
 import SwiftUI
 
 /// Holds every service and the island's state, so views and controllers share one source of truth.
@@ -24,6 +25,7 @@ final class AppModel {
     let settingsNavigation = SettingsNavigation()
     let updates = UpdateService()
     let brightness = BrightnessService()
+    let glow = GlowEngine()
 
     /// Set by the app delegate.
     var openSettings: (@MainActor () -> Void)?
@@ -67,6 +69,19 @@ final class AppModel {
 
     func closeIsland() {
         state.mode = .collapsed
+    }
+
+    /// The opening animation around the notch. Skipped with Reduce Motion on.
+    func playIntro() {
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let start = Date()
+        state.introStart = start
+        DispatchQueue.main.asyncAfter(deadline: .now() + LaunchIntro.duration) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.state.introStart == start else { return }
+                self.state.introStart = nil
+            }
+        }
     }
 
     /// Opens macOS's own Video Effects panel and keeps the Mirror open beside it.

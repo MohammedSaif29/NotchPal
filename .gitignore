@@ -6,3 +6,6 @@ build/
 dist/
 build.log
 .rebuild
+.personal
+.build-personal/
+Sources/NotchPal/Personal/

@@ -12,19 +12,7 @@ echo "macOS $(sw_vers -productVersion) · $(swift --version 2>&1 | head -n 1)"
 echo "Building NotchPal..."
 swift build -c release --product NotchPal
 swift build -c release --product NotchPalMediaBridge
-
 BIN_DIR="$(swift build -c release --show-bin-path)"
-APP="build/NotchPal.app"
-
-rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN_DIR/NotchPal" "$APP/Contents/MacOS/NotchPal"
-cp "$BIN_DIR/libNotchPalMediaBridge.dylib" "$APP/Contents/Resources/"
-cp Support/media-bridge.pl "$APP/Contents/Resources/"
-cp Support/Info.plist "$APP/Contents/Info.plist"
-# Readable by everyone, and no leftover Finder or download tags, so the app is the same on every Mac.
-chmod -R u+rwX,go+rX "$APP"
-xattr -cr "$APP" 2>/dev/null || true
 
 # Signing. macOS remembers permissions (Camera, Calendar, Accessibility) by the app's
 # signature. An ad-hoc signature ("-") changes on every build, so macOS forgets them each time.
@@ -35,16 +23,33 @@ SIGN_IDENTITY="-"
 if security find-identity -p codesigning 2>/dev/null | grep -q "NotchPal Dev"; then
     SIGN_IDENTITY="NotchPal Dev"
 fi
-sign_app() {
-    codesign --force --sign "$1" "$APP/Contents/Resources/libNotchPalMediaBridge.dylib" &&
-        codesign --force --sign "$1" "$APP"
+
+# Puts the built files together into an app at $2, and signs it.
+make_app() {
+    local bin="$1" app="$2"
+    rm -rf "$app"
+    mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+    cp "$bin/NotchPal" "$app/Contents/MacOS/NotchPal"
+    cp "$bin/libNotchPalMediaBridge.dylib" "$app/Contents/Resources/"
+    cp Support/media-bridge.pl "$app/Contents/Resources/"
+    cp Support/Info.plist "$app/Contents/Info.plist"
+    # Readable by everyone, and no leftover Finder or download tags, so the app is the same on every Mac.
+    chmod -R u+rwX,go+rX "$app"
+    xattr -cr "$app" 2>/dev/null || true
+    sign() {
+        codesign --force --sign "$1" "$app/Contents/Resources/libNotchPalMediaBridge.dylib" &&
+            codesign --force --sign "$1" "$app"
+    }
+    if [[ "$SIGN_IDENTITY" != "-" ]] && sign "$SIGN_IDENTITY"; then
+        echo "Signed with: $SIGN_IDENTITY (permissions stay between builds)"
+    else
+        sign "-"
+        echo "Signed ad-hoc (macOS may ask for permissions again after this build)"
+    fi
 }
-if [[ "$SIGN_IDENTITY" != "-" ]] && sign_app "$SIGN_IDENTITY"; then
-    echo "Signed with: $SIGN_IDENTITY (permissions stay between builds)"
-else
-    sign_app "-"
-    echo "Signed ad-hoc (macOS may ask for permissions again after this build)"
-fi
+
+APP="build/NotchPal.app"
+make_app "$BIN_DIR" "$APP"
 
 # A zip for GitHub Releases. ditto keeps everything inside the app exactly as macOS expects.
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)"
@@ -53,13 +58,24 @@ rm -f dist/NotchPal-*.zip
 ditto -c -k --norsrc --noextattr --keepParent "$APP" "dist/NotchPal-$VERSION.zip"
 echo "Release zip: dist/NotchPal-$VERSION.zip"
 
+# A personal copy for this Mac only, with extras from Sources/NotchPal/Personal. It's built
+# separately, so the release zip above never contains them. Turned on by a ".personal" file.
+INSTALL_APP="$APP"
+if [[ "${NOTCHPAL_PERSONAL:-}" == "1" ]]; then
+    echo "Building your personal copy (not in the release zip)..."
+    swift build -c release --product NotchPal --scratch-path .build-personal -Xswiftc -DNOTCHPAL_PERSONAL
+    swift build -c release --product NotchPalMediaBridge --scratch-path .build-personal
+    make_app "$(swift build -c release --scratch-path .build-personal --show-bin-path)" "build/NotchPal-personal.app"
+    INSTALL_APP="build/NotchPal-personal.app"
+fi
+
 # Install like a normal app, so login items and permissions work properly.
 INSTALL_DIR="$HOME/Applications"
 mkdir -p "$INSTALL_DIR"
 pkill -x NotchPal 2>/dev/null || true
 sleep 0.3
 rm -rf "$INSTALL_DIR/NotchPal.app"
-cp -R "$APP" "$INSTALL_DIR/NotchPal.app"
+cp -R "$INSTALL_APP" "$INSTALL_DIR/NotchPal.app"
 echo "Done: $INSTALL_DIR/NotchPal.app"
 
 if [[ "${1:-}" == "--run" ]]; then

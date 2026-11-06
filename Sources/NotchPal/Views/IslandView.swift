@@ -18,9 +18,14 @@ struct IslandView: View {
         let shape = NotchShape(topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius)
         let islandWidth = geometry.size.width + geometry.topRadius * 2
         let motion = app.settings.motion.spring
-        let shadow = app.settings.shadowStrength
+        // A dark shadow under the open island would smother the glow, so it's lighter while glowing.
+        let shadow = app.settings.shadowStrength * (app.settings.glowEnabled ? 0.45 : 1)
 
         ZStack(alignment: .top) {
+            IslandGlow(app: app, content: content,
+                       size: CGSize(width: islandWidth, height: geometry.size.height),
+                       topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius)
+
             ZStack(alignment: .top) {
                 IslandBackground(look: look, shape: shape)
                 contentView(content, geometry: geometry)
@@ -47,6 +52,11 @@ struct IslandView: View {
                     .offset(x: islandWidth / 2 + IslandLayout.bubbleGap + (geometry.bubble + 8) / 2)
                     .onTapGesture { app.openIsland(tab: .timer) }
                     .transition(.scale(scale: 0.2, anchor: .leading).combined(with: .opacity))
+            }
+
+            if let start = app.state.introStart {
+                LaunchIntro(start: start, notch: app.state.notch)
+                    .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

@@ -27,40 +27,40 @@ enum IslandTab: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .home: "music.note"
-        case .calendar: "calendar"
-        case .camera: "camera.fill"
-        case .apps: "square.grid.2x2.fill"
-        case .inbox: "bell.badge.fill"
-        case .notes: "note.text"
-        case .timer: "timer"
-        case .play: "gamecontroller.fill"
+        case .home: return "music.note"
+        case .calendar: return "calendar"
+        case .camera: return "camera.fill"
+        case .apps: return "square.grid.2x2.fill"
+        case .inbox: return "bell.badge.fill"
+        case .notes: return "note.text"
+        case .timer: return "timer"
+        case .play: return "gamecontroller.fill"
         }
     }
 
     var title: String {
         switch self {
-        case .home: "Music"
-        case .calendar: "Calendar"
-        case .camera: "Mirror"
-        case .apps: "Apps"
-        case .inbox: "Notifications"
-        case .notes: "Notes"
-        case .timer: "Timer"
-        case .play: "Games"
+        case .home: return "Music"
+        case .calendar: return "Calendar"
+        case .camera: return "Mirror"
+        case .apps: return "Apps"
+        case .inbox: return "Notifications"
+        case .notes: return "Notes"
+        case .timer: return "Timer"
+        case .play: return "Games"
         }
     }
 
     var summary: String {
         switch self {
-        case .home: "Now playing, volume, speakers, AirDrop and battery"
-        case .calendar: "Today's events with one-click Join for meetings"
-        case .camera: "A quick camera mirror before calls"
-        case .apps: "Your favourite apps, one click away"
-        case .inbox: "Unread counts from Messages, WhatsApp, Mail and more"
-        case .notes: "A scratchpad that's always one hover away"
-        case .timer: "Quick timers and focus sessions"
-        case .play: "Runner, Flappy, Snake and Pong"
+        case .home: return "Now playing, volume, speakers, AirDrop and battery"
+        case .calendar: return "Today's events with one-click Join for meetings"
+        case .camera: return "A quick camera mirror before calls"
+        case .apps: return "Your favourite apps, one click away"
+        case .inbox: return "Unread counts from Messages, WhatsApp, Mail and more"
+        case .notes: return "A scratchpad that's always one hover away"
+        case .timer: return "Quick timers and focus sessions"
+        case .play: return "Runner, Flappy, Snake and Pong"
         }
     }
 }
@@ -101,6 +101,8 @@ final class IslandState {
     @ObservationIgnored var effectsBaseline: Set<Int> = []
     /// The app that's full screen on the notch's screen, if any.
     var fullScreenApp: FullScreenApp?
+    /// When the opening animation started. The island stays the size of the notch while it plays.
+    var introStart: Date?
 
     var effectsPanelOpen: Bool { effectsPanelOpenedAt != nil }
 }
