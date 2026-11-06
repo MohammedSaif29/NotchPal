@@ -43,7 +43,7 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 
 **In the closed notch**
 - **Glow**: a soft light around the notch. At rest it's a faint, still ember in your accent colour. A new song pulses in the album's colours for a few seconds, then holds its main colour. A timer goes green, yellow, then red, the camera and microphone glow green or orange, and charging, low battery, meetings and messages flash it. Pick Halo, Neon, Aurora or Ripple, and choose what lights it in Settings → Glow. A still glow uses no battery.
-- **Lights up when it starts**: two sparks trace your notch, meet in the middle, and the notch lights up.
+- **Lights up when it starts**: two sparks trace your notch, meet in the middle, and the notch lights up. On a light wallpaper they draw in dark ink with coloured halos, so they always show.
 - **Music from any app** with album art and a visualizer tinted to the cover. Swipe sideways on the island to change songs.
 - **Battery, your way**: show it always, unplugged, when low, or while charging. Pick a clean style (a thin Ring, an iPhone-style Pill, the Classic battery, or just the Number) with iPhone colours (white, green while charging, yellow in Low Power Mode, red when low) or any colour you like. Six emoji packs are there too, if you want something playful.
 - **Pal, the notch pet**: dances to music, munches electricity while charging, sweats when the battery is low, and naps late at night. Choose Lively, Calm or Still.

@@ -10,6 +10,9 @@ import SwiftUI
 struct LaunchIntro: View {
     let start: Date
     let notch: NotchGeometry
+    /// The wallpaper around the notch is light: draw in dark ink with coloured halos instead of
+    /// white light, which can't be seen on white.
+    var light = false
 
     static let duration: TimeInterval = 2.9
     /// Room around the notch for the streak and the sparks.
@@ -19,7 +22,7 @@ struct LaunchIntro: View {
         TimelineView(.animation) { context in
             let time = context.date.timeIntervalSince(start)
             Canvas { graphics, size in
-                Self.draw(&graphics, size: size, time: time, notch: notch)
+                Self.draw(&graphics, size: size, time: time, notch: notch, light: light)
             }
         }
         .frame(width: Self.canvas.width, height: Self.canvas.height)
@@ -32,7 +35,11 @@ struct LaunchIntro: View {
 
     // MARK: Drawing
 
-    private static func draw(_ graphics: inout GraphicsContext, size: CGSize, time t: Double, notch: NotchGeometry) {
+    private static func draw(_ graphics: inout GraphicsContext, size: CGSize, time t: Double, notch: NotchGeometry, light: Bool) {
+        // Light on a dark wallpaper; ink with coloured halos on a light one.
+        let ink: Color = light ? Color(white: 0.08) : .white
+        let halo: Color = light ? Color(red: 0.42, green: 0.3, blue: 1.0) : .white
+        let palette = light ? GlowColors.deepened(Self.palette) : Self.palette
         let topRadius: CGFloat = 6
         let bottomRadius: CGFloat = 10
         let width = notch.width + topRadius * 2
@@ -51,9 +58,9 @@ struct LaunchIntro: View {
                 let drawn = side.trimmedPath(from: 0, to: trace)
                 graphics.drawLayer { layer in
                     layer.addFilter(.blur(radius: 3))
-                    layer.stroke(drawn, with: .color(.white.opacity(0.4 * lineFade)), lineWidth: 4)
+                    layer.stroke(drawn, with: .color(halo.opacity((light ? 0.55 : 0.4) * lineFade)), lineWidth: 4)
                 }
-                graphics.stroke(drawn, with: .color(.white.opacity(0.92 * lineFade)), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                graphics.stroke(drawn, with: .color(ink.opacity(0.92 * lineFade)), style: StrokeStyle(lineWidth: light ? 1.8 : 1.6, lineCap: .round))
             }
         }
 
@@ -65,9 +72,9 @@ struct LaunchIntro: View {
                 let head = side.trimmedPath(from: 0, to: max(trace, 0.001)).currentPoint ?? meet
                 graphics.drawLayer { layer in
                     layer.addFilter(.blur(radius: 1.5))
-                    layer.stroke(tail, with: .color(.white.opacity(appear)), style: StrokeStyle(lineWidth: 2.6, lineCap: .round))
+                    layer.stroke(tail, with: .color(ink.opacity(appear)), style: StrokeStyle(lineWidth: 2.6, lineCap: .round))
                 }
-                glowDot(&graphics, at: head, opacity: appear)
+                glowDot(&graphics, at: head, opacity: appear, core: ink, halo: halo)
             }
         }
 
@@ -79,14 +86,14 @@ struct LaunchIntro: View {
             graphics.drawLayer { layer in
                 layer.addFilter(.blur(radius: 14))
                 layer.fill(Path(ellipseIn: CGRect(x: meet.x - radius, y: meet.y - radius * 0.6, width: radius * 2, height: radius * 1.2)),
-                           with: .color(.white.opacity(0.9 * (1 - k))))
+                           with: .color(halo.opacity((light ? 0.75 : 0.9) * (1 - k))))
             }
             let grow = CGFloat(easeOut(clamp(burst / 0.35)))
             let streakAlpha = burst < 0.3 ? 1 : 1 - clamp((burst - 0.3) / 0.5)
             let streakWidth = size.width * grow
             let streak = CGRect(x: meet.x - streakWidth / 2, y: meet.y - 0.8, width: streakWidth, height: 1.6)
             let shading = GraphicsContext.Shading.linearGradient(
-                Gradient(colors: [.white.opacity(0), .white.opacity(streakAlpha), .white.opacity(0)]),
+                Gradient(colors: [ink.opacity(0), ink.opacity(streakAlpha), ink.opacity(0)]),
                 startPoint: CGPoint(x: streak.minX, y: meet.y), endPoint: CGPoint(x: streak.maxX, y: meet.y))
             graphics.drawLayer { layer in
                 layer.addFilter(.blur(radius: 3))
@@ -104,11 +111,11 @@ struct LaunchIntro: View {
             graphics.drawLayer { layer in
                 layer.addFilter(.blur(radius: 16))
                 layer.opacity = bloom
-                layer.stroke(rim, with: colors, lineWidth: 14)
+                layer.stroke(rim, with: colors, lineWidth: light ? 18 : 14)
             }
             graphics.drawLayer { layer in
-                layer.addFilter(.blur(radius: 3))
-                layer.opacity = bloom * 0.9
+                layer.addFilter(.blur(radius: light ? 2 : 3))
+                layer.opacity = bloom * (light ? 1 : 0.9)
                 layer.stroke(rim, with: colors, lineWidth: 3)
             }
         }
@@ -161,14 +168,14 @@ struct LaunchIntro: View {
         return path
     }
 
-    private static func glowDot(_ graphics: inout GraphicsContext, at point: CGPoint, opacity: Double) {
+    private static func glowDot(_ graphics: inout GraphicsContext, at point: CGPoint, opacity: Double, core: Color, halo: Color) {
         graphics.drawLayer { layer in
             layer.addFilter(.blur(radius: 6))
             layer.fill(Path(ellipseIn: CGRect(x: point.x - 11, y: point.y - 11, width: 22, height: 22)),
-                       with: .color(.white.opacity(0.55 * opacity)))
+                       with: .color(halo.opacity(0.6 * opacity)))
         }
         graphics.fill(Path(ellipseIn: CGRect(x: point.x - 2.6, y: point.y - 2.6, width: 5.2, height: 5.2)),
-                      with: .color(.white.opacity(opacity)))
+                      with: .color(core.opacity(opacity)))
     }
 
     // MARK: Helpers

@@ -55,7 +55,7 @@ struct IslandView: View {
             }
 
             if let start = app.state.introStart {
-                LaunchIntro(start: start, notch: app.state.notch)
+                LaunchIntro(start: start, notch: app.state.notch, light: app.glow.lightBackdrop)
                     .transition(.opacity)
             }
         }

@@ -63,7 +63,8 @@ struct IslandGlow: View {
                     if let live = engine.current(app, content: content, now: context.date) {
                         GlowLayers(glow: live, style: style, brightness: app.settings.glowBrightness,
                                    size: size, topRadius: topRadius, bottomRadius: bottomRadius,
-                                   time: interval == nil ? nil : context.date.timeIntervalSinceReferenceDate)
+                                   time: interval == nil ? nil : context.date.timeIntervalSinceReferenceDate,
+                                   light: engine.lightBackdrop)
                     }
                 }
                 .id(glow.key)
@@ -86,13 +87,16 @@ struct GlowLayers: View {
     let bottomRadius: CGFloat
     /// Seconds, to drive the motion. Nil keeps it still.
     let time: Double?
+    /// The wallpaper behind is light: deeper colours, more strength and a crisp edge, since a
+    /// soft pale light disappears on white.
+    var light = false
 
     var body: some View {
-        let level = min(1, Self.level(glow.rhythm, time) * glow.strength * brightness)
+        let level = min(1, Self.level(glow.rhythm, time) * glow.strength * brightness * (light ? 1.7 : 1))
         // Aurora drifts only while something is happening; at rest every style holds still.
         let flowing = time != nil && (glow.rhythm == .flow || (style == .aurora && glow.rhythm != .still))
         let phase: Double? = flowing ? Self.phase(time ?? 0, period: glow.rhythm == .flow ? 2.4 : 7) : nil
-        let paint = Self.edgePaint(glow.colors, phase: phase)
+        let paint = Self.edgePaint(light ? GlowColors.deepened(glow.colors) : glow.colors, phase: phase)
         let rim = NotchRim(topRadius: topRadius, bottomRadius: bottomRadius)
 
         ZStack(alignment: .top) {
@@ -120,6 +124,9 @@ struct GlowLayers: View {
                             .opacity((1 - progress) * level)
                     }
                 }
+            }
+            if light && style != .neon {
+                rim.stroke(paint, lineWidth: 1.8).opacity(min(1, level * 1.1))
             }
         }
         .frame(width: size.width, height: size.height, alignment: .top)

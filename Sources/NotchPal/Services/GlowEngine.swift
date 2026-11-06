@@ -79,6 +79,18 @@ enum GlowColors {
     static let pink = Color(red: 1.0, green: 0.36, blue: 0.64)
     static let white = Color(white: 0.96)
 
+    /// Deeper, richer versions of colours, so they show up on a light wallpaper. Whites and greys
+    /// become a dark slate, since white light can't be seen on white.
+    static func deepened(_ colors: [Color]) -> [Color] {
+        colors.map { color in
+            let ns = NSColor(color).usingColorSpace(.sRGB) ?? NSColor.white
+            var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+            ns.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+            if saturation < 0.12 { return Color(white: 0.28) }
+            return Color(hue: hue, saturation: min(1, max(saturation, 0.7) * 1.1), brightness: brightness * 0.78)
+        }
+    }
+
     /// A colour with a slightly lighter and a slightly deeper shade either side.
     static func shades(of color: Color) -> [Color] {
         let ns = NSColor(color).usingColorSpace(.sRGB) ?? NSColor.white
@@ -109,6 +121,10 @@ final class GlowEngine {
     /// Ticks when a glow should change on its own (a song's pulse ending, a meeting starting),
     /// and every 20 seconds just in case.
     private(set) var heartbeat = 0
+    /// The wallpaper around the notch is light, so the glow uses deeper colours.
+    private(set) var lightBackdrop = false
+    @ObservationIgnored private var backdropURL: URL?
+    @ObservationIgnored private var backdropObservers: [NSObjectProtocol] = []
 
     /// How long a new song pulses before it settles.
     static let songPulse: TimeInterval = 6
@@ -124,11 +140,50 @@ final class GlowEngine {
 
     func start() {
         guard ticker == nil else { return }
+        // Before the opening animation, so it already knows which colours will show up.
+        checkBackdrop(now: true)
+
         let tick = Timer(timeInterval: 20, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.heartbeat &+= 1 }
+            MainActor.assumeIsolated {
+                self?.heartbeat &+= 1
+                self?.checkBackdrop()
+            }
         }
         RunLoop.main.add(tick, forMode: .common)
         ticker = tick
+
+        // Each desktop Space can have its own wallpaper.
+        let changes: [(NotificationCenter, Notification.Name)] = [
+            (NSWorkspace.shared.notificationCenter, NSWorkspace.activeSpaceDidChangeNotification),
+            (NotificationCenter.default, NSApplication.didChangeScreenParametersNotification),
+        ]
+        for (center, name) in changes {
+            backdropObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkBackdrop(force: true) }
+            })
+        }
+    }
+
+    /// Looks at the wallpaper again if it changed. `now` reads it straight away instead of in the
+    /// background.
+    private func checkBackdrop(now: Bool = false, force: Bool = false) {
+        guard let url = BackdropProbe.wallpaperURL() else { return }
+        guard force || url != backdropURL else { return }
+        backdropURL = url
+        if now {
+            apply(BackdropProbe.brightness(of: url))
+            return
+        }
+        Task.detached(priority: .utility) { [weak self] in
+            let brightness = BackdropProbe.brightness(of: url)
+            await MainActor.run { self?.apply(brightness) }
+        }
+    }
+
+    private func apply(_ brightness: Double?) {
+        // A wallpaper that can't be read keeps the usual light-on-dark look.
+        let light = (brightness ?? 0) > 0.6
+        if lightBackdrop != light { lightBackdrop = light }
     }
 
     func showPreview(seconds: TimeInterval = 4) {
