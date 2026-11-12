@@ -8,7 +8,7 @@ Made by **Mohammed Saif** · [LinkedIn](https://www.linkedin.com/in/saif-mohamme
 
 **[⬇ Download NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)**
 
-![The open island with the music player, AirDrop and battery](docs/screenshots/music.png)
+![The island floating below the notch, with the music player, AirDrop and battery](docs/screenshots/floating-island.png)
 
 ---
 
@@ -80,6 +80,18 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 - Motion: Snappy, Smooth, Gentle, Liquid or Bouncy, and content that appears with a Blur, Fade, Slide or Pop.
 
 ## Pictures
+
+Search in the notch (⌥ Space), with maths, Apple Intelligence, Siri, Claude and ChatGPT:
+
+![Search in the notch, working out 24*7](docs/screenshots/search.png)
+
+The tour that shows new users around, and shows what's new after an update:
+
+![A tour card in the notch about the ⌥ Space shortcut](docs/screenshots/tour.png)
+
+Or keep the island attached to the notch, the way it used to open (Settings → General):
+
+![The open island attached to the notch, with the music player, AirDrop and battery](docs/screenshots/music.png)
 
 The closed notch while music plays:
 

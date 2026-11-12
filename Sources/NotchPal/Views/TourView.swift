@@ -133,11 +133,13 @@ enum Tours {
 struct TourView: View {
     let app: AppModel
     var floating = true
+    /// A card to show instead of the running tour, for pictures of the island.
+    var shown: TourState?
 
     static let size = CGSize(width: 460, height: 214)
 
     var body: some View {
-        let state = app.state.tour ?? TourState(kind: .welcome)
+        let state = shown ?? app.state.tour ?? TourState(kind: .welcome)
         let steps = Tours.steps(state.kind, app: app)
         let index = min(state.step, steps.count - 1)
         let step = steps[index]

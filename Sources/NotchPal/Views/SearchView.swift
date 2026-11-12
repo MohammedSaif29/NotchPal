@@ -38,6 +38,7 @@ struct SearchView: View {
     let app: AppModel
     /// Floating below the notch, so it starts at the top instead of under the camera.
     var floating = false
+    @Environment(\.isIslandPicture) private var isPicture
 
     var body: some View {
         let search = app.search
@@ -66,8 +67,16 @@ struct SearchView: View {
                     ? AnyShapeStyle(LinearGradient(colors: IntelligenceColors.all, startPoint: .leading, endPoint: .trailing))
                     : AnyShapeStyle(Color.white.opacity(0.6)))
                 .frame(width: 20)
-            SearchField(search: search)
-                .frame(height: 24)
+            if isPicture {
+                // The text box is an AppKit field, which can't be drawn into a picture.
+                Text(search.query)
+                    .font(.system(size: 16, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 24)
+            } else {
+                SearchField(search: search)
+                    .frame(height: 24)
+            }
             Button {
                 app.closeSearch()
                 app.askSiri()
@@ -163,9 +172,23 @@ struct SearchField: NSViewRepresentable {
 
 private struct ResultsList: View {
     let app: AppModel
+    @Environment(\.isIslandPicture) private var isPicture
 
     var body: some View {
         let search = app.search
+        if isPicture {
+            // Scroll views can't be drawn into a picture, so the first rows are laid out plainly.
+            VStack(spacing: 0) {
+                ForEach(Array(search.results.prefix(SearchService.visibleRows).enumerated()), id: \.element.id) { index, result in
+                    ResultRow(result: result, selected: index == search.selection, accent: app.accent)
+                }
+            }
+        } else {
+            list(search)
+        }
+    }
+
+    private func list(_ search: SearchService) -> some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {

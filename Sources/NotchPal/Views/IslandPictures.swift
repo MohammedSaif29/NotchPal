@@ -35,25 +35,52 @@ enum IslandPictures {
         guard panel.runModal() == .OK, let chosen = panel.url else { return }
 
         let folder = chosen.appendingPathComponent("NotchPal Pictures", isDirectory: true)
+        render(app: app, into: folder)
+        NSWorkspace.shared.activateFileViewerSelecting([folder])
+    }
+
+
+    private static func render(app: AppModel, into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
         let originalTab = app.state.tab
-        defer { app.state.tab = originalTab }
+        let originalQuery = app.search.query
+        defer {
+            app.state.tab = originalTab
+            app.search.query = originalQuery
+        }
+
+        // The island floating below the notch, the way it opens when you click.
+        if let first = app.settings.visibleTabs.first(where: { $0 != .camera }) {
+            app.state.tab = app.settings.visibleTabs.contains(.home) ? .home : first
+            let size = CGSize(width: CGFloat(app.settings.openWidth), height: IslandLayout.openHeight(app) + 38)
+            write(FloatingPicture(app: app, size: size) { ExpandedView(app: app, floating: true) },
+                  to: folder.appendingPathComponent("1-floating-island.png"))
+        }
+        // Search in the notch, doing a sum.
+        app.search.query = "24*7"
+        let searchSize = CGSize(width: max(CGFloat(app.settings.openWidth), 580), height: app.search.bodyHeight + 18)
+        write(FloatingPicture(app: app, size: searchSize) { SearchView(app: app, floating: true) },
+              to: folder.appendingPathComponent("2-search.png"))
+        app.search.query = originalQuery
+        // The tour's card about search.
+        write(FloatingPicture(app: app, size: TourView.size) {
+            TourView(app: app, floating: true, shown: TourState(kind: .welcome, step: 2))
+        }, to: folder.appendingPathComponent("3-tour.png"))
 
         // The open island on a few tabs. The Mirror is left out, so your face is never in a picture.
-        let tabs: [(IslandTab, String)] = [(.home, "1-music"), (.calendar, "2-calendar"), (.play, "3-games"),
-                                           (.timer, "4-timer"), (.apps, "5-apps")]
+        let tabs: [(IslandTab, String)] = [(.home, "4-music"), (.calendar, "5-calendar"), (.play, "6-games"),
+                                           (.timer, "7-timer"), (.apps, "8-apps")]
         for (tab, name) in tabs where app.settings.visibleTabs.contains(tab) {
             app.state.tab = tab
             write(OpenIslandPicture(app: app), to: folder.appendingPathComponent("\(name).png"))
         }
         if IslandLayout.content(app) == .compact {
-            write(ClosedIslandPicture(app: app), to: folder.appendingPathComponent("6-closed-notch.png"))
+            write(ClosedIslandPicture(app: app), to: folder.appendingPathComponent("9-closed-notch.png"))
         }
         if app.power.hasBattery {
-            write(BatteryStylesPicture(app: app), to: folder.appendingPathComponent("7-battery-styles.png"))
+            write(BatteryStylesPicture(app: app), to: folder.appendingPathComponent("10-battery-styles.png"))
         }
-        NSWorkspace.shared.activateFileViewerSelecting([folder])
     }
 
     private static func write(_ view: some View, to url: URL) {
@@ -116,6 +143,43 @@ private struct OpenIslandPicture: View {
             }
             .frame(width: size.width + 28, height: size.height)
             .clipShape(shape)
+            .foregroundStyle(.white)
+        }
+    }
+}
+
+/// The closed notch with a card floating just below it, like the island after a click.
+private struct FloatingPicture<Card: View>: View {
+    let app: AppModel
+    let size: CGSize
+    let card: Card
+
+    init(app: AppModel, size: CGSize, @ViewBuilder card: () -> Card) {
+        self.app = app
+        self.size = size
+        self.card = card()
+    }
+
+    var body: some View {
+        let geometry = IslandLayout.geometry(app)
+        let shape = NotchShape(topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius)
+        let cardShape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+        PictureBackdrop {
+            VStack(spacing: IslandLayout.cardGap) {
+                ZStack(alignment: .top) {
+                    shape.fill(Color.black)
+                    CompactWingsView(app: app, size: geometry.size)
+                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+                }
+                .frame(width: geometry.size.width + geometry.topRadius * 2, height: geometry.size.height)
+                .clipShape(shape)
+                card
+                    .frame(width: size.width, height: size.height, alignment: .top)
+                    .background(cardShape.fill(Color.black))
+                    .overlay(cardShape.strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
+                    .clipShape(cardShape)
+                    .shadow(color: .black.opacity(0.45), radius: 18, y: 8)
+            }
             .foregroundStyle(.white)
         }
     }
