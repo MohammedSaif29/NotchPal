@@ -303,6 +303,9 @@ final class IslandController {
     /// Two-finger swipe sideways on the island to change songs, like the iPhone's island.
     private func startWatchingSwipes() {
         scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            // Only scrolls on the island itself. Settings and every other window scroll as usual.
+            let onIsland = MainActor.assumeIsolated { event.window != nil && event.window === self?.panel }
+            guard onIsland else { return event }
             let swipe = SwipeSample(
                 dx: event.scrollingDeltaX,
                 dy: event.scrollingDeltaY,
