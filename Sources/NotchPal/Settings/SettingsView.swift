@@ -141,6 +141,39 @@ private struct SettingsIcon: View {
 }
 
 /// A labelled slider with its value shown on the right.
+/// macOS 27-style glass slider: from ultra clear to fully tinted.
+private struct GlassTintSlider: View {
+    let value: Binding<Double>
+
+    var body: some View {
+        let snapped = Binding<Double>(
+            get: { value.wrappedValue },
+            set: { newValue in
+                let rounded = (newValue / 0.02).rounded() * 0.02
+                let clamped = min(0.85, max(0, rounded))
+                if clamped != value.wrappedValue { value.wrappedValue = clamped }
+            }
+        )
+        VStack(alignment: .leading, spacing: 4) {
+            LabeledContent("Glass") {
+                Slider(value: snapped, in: 0...0.85)
+                    .frame(maxWidth: 340)
+            }
+            HStack {
+                Spacer()
+                HStack {
+                    Text("Ultra clear")
+                    Spacer()
+                    Text("Fully tinted")
+                }
+                .frame(maxWidth: 340)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+
 private struct SliderRow: View {
     let title: String
     let value: Binding<Double>
@@ -219,14 +252,65 @@ private struct GeneralSettings: View {
                         }
                     }
                 Toggle("Say hi when NotchPal starts", isOn: $settings.sayHello)
+                HStack {
+                    Button("Show the tour") { app.startTour(.welcome) }
+                    Button("What's new") { app.startTour(.whatsNew(version: app.updates.currentVersion)) }
+                }
+            }
+
+            Section("Search, Siri and Apple Intelligence") {
+                Picker("Search shortcut", selection: $settings.searchShortcut) {
+                    ForEach(SearchShortcut.allCases) { shortcut in
+                        Text(shortcut.label).tag(shortcut)
+                    }
+                }
+                .onChange(of: settings.searchShortcut) { _, shortcut in
+                    app.hotKey.register(shortcut)
+                }
+                Toggle("Answer questions with Apple Intelligence", isOn: $settings.aiAnswers)
+                Text(AppleIntelligence.isAvailable
+                     ? "Type a question in search and Apple Intelligence answers right in the notch, on this Mac."
+                     : "Apple Intelligence answers need an Apple silicon Mac on macOS 26 or newer, with Apple Intelligence turned on. Search still offers Siri, Claude and ChatGPT.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Try search") { app.openSearch() }
+                    Button("Ask Siri") { app.askSiri() }
+                }
+            }
+
+            Section("Live Activities") {
+                Toggle("Show calls, recordings and screen recordings", isOn: $settings.liveActivities)
+                    .onChange(of: settings.liveActivities) { _, on in
+                        if on { app.activities.start() } else { app.activities.stop() }
+                    }
+                Toggle("Split a second activity off like a droplet", isOn: $settings.splitActivities)
+                Text("A call in FaceTime, Zoom, Meet or WhatsApp shows its timer in the notch, and so does a Voice Memos or screen recording. NotchPal only checks which app is using the microphone; it never listens.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Opening the island") {
-                Picker("Open when", selection: $settings.openOnHover) {
-                    Text("Hovering").tag(true)
-                    Text("Clicking").tag(false)
+                Picker("Island", selection: $settings.openStyle) {
+                    ForEach(OpenStyle.allCases) { style in
+                        Text(style.label).tag(style)
+                    }
                 }
                 .pickerStyle(.segmented)
+                Text(settings.openStyle.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Open when", selection: $settings.openOnHover) {
+                    Text("Clicking").tag(false)
+                    Text("Hovering").tag(true)
+                }
+                .pickerStyle(.segmented)
+                Text(settings.openOnHover
+                     ? "Move the pointer onto the notch to open it."
+                     : "Click the notch or swipe down on it with two fingers to open it, and push up to close. Hovering makes it bulge.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Pull the pointer in like a black hole", isOn: $settings.pointerMagnet)
                 if settings.openOnHover {
                     SliderRow(title: "Hover delay", value: $settings.hoverDelay, range: 0...1, step: 0.1) {
                         String(format: "%.1fs", $0)
@@ -286,9 +370,7 @@ private struct AppearanceSettings: View {
 
             if settings.style.isGlass {
                 Section("Glass") {
-                    SliderRow(title: "Darkness", value: $settings.glassDarkness, range: 0...0.8, step: 0.02) {
-                        "\(Int(($0 * 100).rounded()))%"
-                    }
+                    GlassTintSlider(value: $settings.glassDarkness)
                     Picker("Tint", selection: $settings.glassTint) {
                         ForEach(GlassTint.allCases) { tint in
                             Text(tint.label).tag(tint)
@@ -300,6 +382,10 @@ private struct AppearanceSettings: View {
                                     selection: hexBinding({ settings.glassTintHex }, { settings.glassTintHex = $0 }, fallback: .blue),
                                     supportsOpacity: false)
                     }
+                    Toggle("Keep text readable over bright windows", isOn: $settings.glassReadable)
+                    Text("Shades the middle of the glass and gives the text a soft shadow, so it stays readable over white pages and bright album art. The edges stay glassy.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Toggle("Blend the top into the notch", isOn: $settings.glassBlendTop)
                     Toggle("Shiny edge", isOn: $settings.glassBorder)
                     Toggle("Use glass for the closed island too", isOn: $settings.glassWhenClosed)

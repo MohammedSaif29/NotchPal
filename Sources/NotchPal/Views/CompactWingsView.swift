@@ -26,6 +26,10 @@ struct CompactWingsView: View {
     private var leading: some View {
         let music = app.nowPlaying
         switch IslandLayout.compactKind(app) {
+        case .screenRecording, .call, .recording:
+            if let item = IslandLayout.primaryItem(app) {
+                LiveLeading(item: item, size: max(14, min(20, app.state.notch.height - 11)))
+            }
         case .music:
             ArtworkThumb(artwork: app.settings.showArtworkInNotch ? music.artwork : nil,
                          appIcon: music.appIcon,
@@ -60,6 +64,10 @@ struct CompactWingsView: View {
         // The privacy dots sit beside whatever else is here, never on top of it.
         HStack(spacing: 6) {
             switch IslandLayout.compactKind(app) {
+            case .screenRecording, .call, .recording:
+                if let item = IslandLayout.primaryItem(app) {
+                    LiveClock(item: item)
+                }
             case .music:
                 if app.settings.showVisualizer {
                     VisualizerBars(playing: music.isPlaying, tint: app.accent)

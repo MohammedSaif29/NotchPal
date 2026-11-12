@@ -13,8 +13,13 @@ struct IslandView: View {
     var body: some View {
         let content = IslandLayout.content(app)
         let geometry = IslandLayout.geometry(app)
-        let expanded = content == .expanded
+        let isOpen = content == .expanded || content == .search || content == .tour
+        // Floating: the notch keeps its closed shape and content, and the island floats below it.
+        let card = IslandLayout.cardSize(app)
+        let notchContent = card != nil ? IslandLayout.closedContent(app) : content
+        let expanded = isOpen && card == nil
         let look = IslandLook.current(app, expanded: expanded)
+        let cardLook = IslandLook.current(app, expanded: true)
         let shape = NotchShape(topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius)
         let islandWidth = geometry.size.width + geometry.topRadius * 2
         let motion = app.settings.motion.spring
@@ -26,10 +31,17 @@ struct IslandView: View {
                        size: CGSize(width: islandWidth, height: geometry.size.height),
                        topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius)
 
+            if app.settings.pointerMagnet && look.style == .black && !isOpen && content != .hidden {
+                PointerMagnet(state: app.state, islandWidth: islandWidth, islandHeight: geometry.size.height,
+                              topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius)
+            }
+
             ZStack(alignment: .top) {
                 IslandBackground(look: look, shape: shape)
-                contentView(content, geometry: geometry)
+                contentView(notchContent, geometry: geometry)
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+                    // Over glass, a soft shadow keeps white text and icons readable on bright windows.
+                    .shadow(color: .black.opacity(look.shadowsText ? 0.6 : 0), radius: look.shadowsText ? 2.5 : 0, y: 0.5)
             }
             .frame(width: islandWidth, height: geometry.size.height)
             .clipShape(shape)
@@ -46,12 +58,41 @@ struct IslandView: View {
                 return true
             }
 
-            if geometry.bubble > 0 {
-                TimerBubble(timer: app.timer, diameter: geometry.bubble)
+            if geometry.bubble > 0, let item = IslandLayout.bubbleItem(app) {
+                // The second live activity splits off the notch like a droplet, and merges back.
+                let split = { (progress: Double) in
+                    DropletSplit(progress: progress, islandWidth: islandWidth, islandHeight: geometry.size.height,
+                                 topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius,
+                                 diameter: geometry.bubble, neck: look.style == .black)
+                }
+                ActivityBubble(app: app, item: item, diameter: geometry.bubble)
                     .opacity(app.settings.closedBrightness)
-                    .offset(x: islandWidth / 2 + IslandLayout.bubbleGap + (geometry.bubble + 8) / 2)
-                    .onTapGesture { app.openIsland(tab: .timer) }
-                    .transition(.scale(scale: 0.2, anchor: .leading).combined(with: .opacity))
+                    .onTapGesture { openBubble(item) }
+                    .id(item.id)
+                    // The identity state is the bubble fully split off, beside the island.
+                    .transition(.modifier(active: split(0), identity: split(1)))
+            }
+
+            if let card {
+                // The open island splits off the notch and floats below it, like Apple's new MacBook Pro.
+                let split = { (progress: Double) in
+                    CardSplit(progress: progress, islandWidth: islandWidth, islandHeight: geometry.size.height,
+                              topRadius: geometry.topRadius, bottomRadius: geometry.bottomRadius,
+                              cardSize: card, neck: look.style == .black && cardLook.style == .black)
+                }
+                cardView(content)
+                    .frame(width: card.width, height: card.height, alignment: .top)
+                    .shadow(color: .black.opacity(look.shadowsText || cardLook.shadowsText ? 0.6 : 0), radius: 2.5, y: 0.5)
+                    .background(CardBackground(look: cardLook))
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(Color.black)
+                            .shadow(color: .black.opacity(0.6 * shadow), radius: 18, y: 8)
+                            .opacity(cardLook.usesLiquidGlass ? 0 : 1)
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .transition(.modifier(active: split(0), identity: split(1)))
             }
 
             if let start = app.state.introStart {
@@ -62,8 +103,25 @@ struct IslandView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(motion, value: geometry)
         .animation(motion, value: content)
+        .animation(motion, value: card)
         .animation(.easeInOut(duration: 0.25), value: look)
         .environment(\.colorScheme, .dark)
+    }
+
+    /// What's inside the floating island.
+    @ViewBuilder
+    private func cardView(_ content: IslandContent) -> some View {
+        switch content {
+        case .search:
+            SearchView(app: app, floating: true)
+                .opacity(app.settings.openBrightness)
+        case .tour:
+            TourView(app: app, floating: true)
+                .opacity(app.settings.openBrightness)
+        default:
+            ExpandedView(app: app, floating: true)
+                .opacity(app.settings.openBrightness)
+        }
     }
 
     /// Icons and text are dimmed to your Brightness settings. The island itself stays black.
@@ -71,6 +129,14 @@ struct IslandView: View {
     private func contentView(_ content: IslandContent, geometry: IslandGeometry) -> some View {
         let reveal = app.settings.reveal
         switch content {
+        case .search:
+            SearchView(app: app)
+                .opacity(app.settings.openBrightness)
+                .transition(.islandContent(reveal))
+        case .tour:
+            TourView(app: app, floating: false)
+                .opacity(app.settings.openBrightness)
+                .transition(.islandContent(reveal))
         case .expanded:
             ExpandedView(app: app)
                 .opacity(app.settings.openBrightness)
@@ -98,6 +164,14 @@ struct IslandView: View {
                 .onTapGesture { app.openIsland() }
         case .hidden:
             Color.clear
+        }
+    }
+
+    private func openBubble(_ item: LiveItem) {
+        switch item.kind {
+        case .timer: app.openIsland(tab: .timer)
+        case .music: app.openIsland(tab: .home)
+        case .call, .recording, .screenRecording: app.openIsland()
         }
     }
 

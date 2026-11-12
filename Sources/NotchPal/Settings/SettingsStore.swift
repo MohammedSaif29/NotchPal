@@ -226,6 +226,51 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     }
 }
 
+/// How the open island appears.
+enum OpenStyle: String, CaseIterable, Identifiable {
+    /// Like Apple's new MacBook Pro: the notch stays small and the island floats below it.
+    case floating
+    /// The whole island grows down out of the notch.
+    case attached
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .floating: "Floating"
+        case .attached: "Attached"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .floating: "Like the new MacBook Pro: the notch stays small and the island splits off and floats just below it, like a droplet."
+        case .attached: "The whole island grows down out of the notch."
+        }
+    }
+}
+
+/// The keyboard shortcut that opens search in the notch.
+enum SearchShortcut: String, CaseIterable, Identifiable {
+    case optionSpace
+    case controlSpace
+    case optionCommandSpace
+    case shiftCommandSpace
+    case off
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .optionSpace: "⌥ Space"
+        case .controlSpace: "⌃ Space"
+        case .optionCommandSpace: "⌥⌘ Space"
+        case .shiftCommandSpace: "⇧⌘ Space"
+        case .off: "Off"
+        }
+    }
+}
+
 /// How the light around the notch looks.
 enum GlowStyle: String, CaseIterable, Identifiable {
     case halo
@@ -464,6 +509,8 @@ final class SettingsStore {
     var glassWhenClosed: Bool { didSet { Self.save(glassWhenClosed, "glassWhenClosed") } }
     /// Fade the top of a glass island into black, so it looks like it grows out of the notch.
     var glassBlendTop: Bool { didSet { Self.save(glassBlendTop, "glassBlendTop") } }
+    /// Shades the middle of the glass and shadows the text, so it reads over bright windows.
+    var glassReadable: Bool { didSet { Self.save(glassReadable, "glassReadable") } }
     var shadowStrength: Double { didSet { Self.save(shadowStrength, "shadowStrength") } }
     var reveal: RevealStyle { didSet { Self.save(reveal.rawValue, "reveal") } }
     /// How bright the icons and text in the closed notch are. Lower is easier on the eyes.
@@ -486,6 +533,18 @@ final class SettingsStore {
     var glowIdle: GlowIdle { didSet { Self.save(glowIdle.rawValue, "glowIdle") } }
     /// Two sparks trace the notch and light it up when NotchPal starts.
     var launchIntro: Bool { didSet { Self.save(launchIntro, "launchIntro") } }
+
+    // Search, Siri and Live Activities
+    var searchShortcut: SearchShortcut { didSet { Self.save(searchShortcut.rawValue, "searchShortcut") } }
+    /// Apple Intelligence answers questions right in the notch.
+    var aiAnswers: Bool { didSet { Self.save(aiAnswers, "aiAnswers") } }
+    /// Calls, recordings and screen recordings show in the notch.
+    var liveActivities: Bool { didSet { Self.save(liveActivities, "liveActivities") } }
+    /// A second live activity splits off into its own little island, like a droplet.
+    var splitActivities: Bool { didSet { Self.save(splitActivities, "splitActivities") } }
+    var openStyle: OpenStyle { didSet { Self.save(openStyle.rawValue, "openStyle") } }
+    /// The notch reaches down toward the pointer like a black hole.
+    var pointerMagnet: Bool { didSet { Self.save(pointerMagnet, "pointerMagnet") } }
 
     // Behaviour
     var openOnHover: Bool { didSet { Self.save(openOnHover, "openOnHover") } }
@@ -576,6 +635,7 @@ final class SettingsStore {
         glassBorder = stored.object(forKey: "glassBorder") as? Bool ?? true
         glassWhenClosed = stored.object(forKey: "glassWhenClosed") as? Bool ?? false
         glassBlendTop = stored.object(forKey: "glassBlendTop") as? Bool ?? true
+        glassReadable = stored.object(forKey: "glassReadable") as? Bool ?? true
         shadowStrength = stored.object(forKey: "shadowStrength") as? Double ?? 0.5
         reveal = RevealStyle(rawValue: stored.string(forKey: "reveal") ?? "") ?? .blur
         closedBrightness = Self.clamp(stored.object(forKey: "closedBrightness") as? Double ?? 0.8, 0.3...1)
@@ -590,8 +650,15 @@ final class SettingsStore {
         glowAlerts = stored.object(forKey: "glowAlerts") as? Bool ?? true
         glowIdle = GlowIdle(rawValue: stored.string(forKey: "glowIdle") ?? "") ?? .ember
         launchIntro = stored.object(forKey: "launchIntro") as? Bool ?? true
+        searchShortcut = SearchShortcut(rawValue: stored.string(forKey: "searchShortcut") ?? "") ?? .optionSpace
+        aiAnswers = stored.object(forKey: "aiAnswers") as? Bool ?? true
+        liveActivities = stored.object(forKey: "liveActivities") as? Bool ?? true
+        splitActivities = stored.object(forKey: "splitActivities") as? Bool ?? true
+        openStyle = OpenStyle(rawValue: stored.string(forKey: "openStyle") ?? "") ?? .floating
+        pointerMagnet = stored.object(forKey: "pointerMagnet") as? Bool ?? true
 
-        openOnHover = stored.object(forKey: "openOnHover") as? Bool ?? true
+        // Like Apple's island: click (or swipe down) to open. Hovering only makes it bulge.
+        openOnHover = stored.object(forKey: "openOnHover") as? Bool ?? false
         hoverDelay = stored.object(forKey: "hoverDelay") as? Double ?? 0.2
         haptics = stored.object(forKey: "haptics") as? Bool ?? true
         sayHello = stored.object(forKey: "sayHello") as? Bool ?? true
@@ -730,6 +797,7 @@ final class SettingsStore {
         glassBorder = true
         glassWhenClosed = false
         glassBlendTop = true
+        glassReadable = true
         shadowStrength = 0.5
         reveal = .blur
         closedBrightness = 0.8

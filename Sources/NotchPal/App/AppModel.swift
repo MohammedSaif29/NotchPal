@@ -26,6 +26,12 @@ final class AppModel {
     let updates = UpdateService()
     let brightness = BrightnessService()
     let glow = GlowEngine()
+    let activities = ActivityMonitor()
+    let search = SearchService()
+    let hotKey = GlobalHotKey()
+
+    /// Set by the island controller: gives the island the keyboard, for search.
+    var focusIsland: (@MainActor () -> Void)?
 
     /// Set by the app delegate.
     var openSettings: (@MainActor () -> Void)?
@@ -43,7 +49,83 @@ final class AppModel {
                 settings.seenMusicApps = settings.seenMusicApps + [bundleID]
             }
         }
+        search.app = self
     }
+
+    /// Opens the notch as a search bar, from the shortcut or the 🔍 button.
+    func openSearch() {
+        search.reset()
+        state.tour = nil
+        state.holdOpenUntil = nil
+        state.searching = true
+        state.mode = .expanded
+        focusIsland?()
+    }
+
+    func closeSearch() {
+        guard state.searching else { return }
+        state.searching = false
+        closeIsland()
+    }
+
+    /// The shortcut opens search, and closes it again if it's already open.
+    func toggleSearch() {
+        if state.searching && state.mode == .expanded {
+            closeSearch()
+        } else {
+            openSearch()
+        }
+    }
+
+    // MARK: Tour
+
+    /// The version whose tour (welcome or What's new) has been shown.
+    static let tourSeenKey = "tourSeenVersion"
+
+    /// Shows the tour in the notch, one card at a time.
+    func startTour(_ kind: TourKind) {
+        state.searching = false
+        state.tour = TourState(kind: kind)
+        state.holdOpenUntil = nil
+        state.mode = .expanded
+        UserDefaults.standard.set(updates.currentVersion, forKey: Self.tourSeenKey)
+        focusIsland?()
+    }
+
+    func moveTour(by step: Int) {
+        guard var tour = state.tour else { return }
+        let count = Tours.steps(tour.kind, app: self).count
+        tour.step = min(max(0, tour.step + step), count - 1)
+        state.tour = tour
+    }
+
+    func endTour() {
+        guard state.tour != nil else { return }
+        state.tour = nil
+        closeIsland()
+    }
+
+    func runTourAction(_ action: TourAction) {
+        switch action {
+        case .trySearch:
+            state.tour = nil
+            openSearch()
+        case .askSiri:
+            askSiri()
+        case .openSettings:
+            endTour()
+            openSettings?()
+        }
+    }
+
+    /// Opens Siri. The notch glows in Siri's colours while it listens.
+    func askSiri() {
+        glow.noteSiriOpened()
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Siri") {
+            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        }
+    }
+
 
     /// The tint used across the island: the user's pick, or the album art's colour.
     var accent: Color {

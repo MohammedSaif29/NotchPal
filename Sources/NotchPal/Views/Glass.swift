@@ -13,8 +13,27 @@ struct IslandLook: Equatable {
     var border: Bool
     /// Height of the solid black band at the top that blends into the notch. 0 for none.
     var capHeight: CGFloat = 0
+    /// Keep white text readable over bright windows: shade the middle of the glass and give
+    /// the text a soft shadow.
+    var readable: Bool = false
 
     static let black = IslandLook(style: .black, darkness: 0, tint: nil, border: false)
+
+    /// How much extra shade the middle of the glass gets so white text reads over a bright
+    /// window, on top of the Darkness setting. Clear glass needs the most.
+    var readabilityShade: Double {
+        guard readable, style.isGlass else { return 0 }
+        let target: Double
+        switch style {
+        case .clear: target = 0.52
+        case .glass: target = 0.44
+        default: target = 0.3
+        }
+        return max(0, target - darkness)
+    }
+
+    /// True when the text needs a shadow to stand out from what's behind the glass.
+    var shadowsText: Bool { readable && style.isGlass }
 
     /// True when this look is drawn with Apple's Liquid Glass (macOS 26 and later).
     var usesLiquidGlass: Bool {
@@ -34,7 +53,7 @@ struct IslandLook: Equatable {
         let notch = app.state.notch
         let cap: CGFloat = settings.glassBlendTop && notch.hasNotch ? notch.height : 0
         return IslandLook(style: settings.style, darkness: settings.glassDarkness, tint: tint,
-                          border: settings.glassBorder, capHeight: cap)
+                          border: settings.glassBorder, capHeight: cap, readable: settings.glassReadable)
     }
 }
 
@@ -65,6 +84,15 @@ struct GlassFill: View {
                 shape.fill(tint.opacity(look.style == .clear ? 0.12 : 0.2))
             }
             shape.fill(Color.black.opacity(look.darkness))
+            if look.readabilityShade > 0 {
+                // Darkest behind the text in the middle, lighter at the edges so the glass still shines.
+                EllipticalGradient(
+                    colors: [Color.black.opacity(look.readabilityShade), Color.black.opacity(look.readabilityShade * 0.35)],
+                    center: .center, startRadiusFraction: 0.15, endRadiusFraction: 0.8
+                )
+                .clipShape(shape)
+                .allowsHitTesting(false)
+            }
             if look.capHeight > 0 {
                 NotchCap(height: look.capHeight)
                     .clipShape(shape)

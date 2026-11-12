@@ -50,6 +50,7 @@ struct AlertView: View {
         case .charging: "Charging"
         case .lowBattery: "Low Battery"
         case .device: "Connected"
+        case .audioSwitch: "Audio switched"
         case .nowPlaying(let song): song
         case .timerDone: "Time's up!"
         case .event(let name, _, _): name
@@ -71,6 +72,8 @@ struct AlertView: View {
             "Plug in soon"
         case .device(let name, _):
             name
+        case .audioSwitch(let name, _):
+            "Now playing on \(name)"
         case .nowPlaying:
             app.nowPlaying.track?.artist ?? ""
         case .timerDone:
@@ -115,7 +118,7 @@ struct AlertView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(reading.tint)
             }
-        case .device(_, let symbol):
+        case .device(_, let symbol), .audioSwitch(_, let symbol):
             Image(systemName: symbol)
                 .font(.system(size: 22, weight: .regular))
         case .nowPlaying:
@@ -157,6 +160,11 @@ struct AlertView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 18))
                 .foregroundStyle(.green)
+        case .audioSwitch:
+            Image(systemName: "speaker.wave.2.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.6))
+                .symbolEffect(.variableColor.iterative)
         case .nowPlaying:
             VisualizerBars(playing: app.nowPlaying.isPlaying, tint: app.accent)
         case .timerDone:

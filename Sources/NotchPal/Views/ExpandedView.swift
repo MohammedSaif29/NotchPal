@@ -8,23 +8,29 @@ import SwiftUI
 /// and the selected widget below.
 struct ExpandedView: View {
     let app: AppModel
+    /// Floating below the notch, so there's no camera to leave room for in the tab row.
+    var floating = false
     @Environment(\.isIslandPicture) private var isPicture
     @Namespace private var tabSpace
 
-    init(app: AppModel) {
+    init(app: AppModel, floating: Bool = false) {
         self.app = app
+        self.floating = floating
     }
 
     var body: some View {
         let state = app.state
         let tabs = app.settings.visibleTabs
-        let width = IslandLayout.geometry(app).size.width
-        // Room on each side of the camera, inside the island's padding.
-        let side = max(40, (width - state.notch.width) / 2 - 20)
+        let width = floating ? (IslandLayout.cardSize(app)?.width ?? CGFloat(app.settings.openWidth))
+                             : IslandLayout.geometry(app).size.width
+        let middle = floating ? 12 : state.notch.width
+        // Room on each side of the camera (or the middle, when floating), inside the island's padding.
+        let side = max(40, (width - middle) / 2 - 20)
         let layout = TabLayout.make(count: tabs.count, side: side)
         let leftTabs = Array(tabs.prefix(layout.left))
         let rightTabs = Array(tabs.dropFirst(layout.left))
         let showClock = side - CGFloat(rightTabs.count) * layout.slot - TabLayout.gear > 52
+        let live = IslandLayout.liveItems(app).first { [LiveKind.call, .recording, .screenRecording].contains($0.kind) }
 
         VStack(spacing: 8) {
             HStack(spacing: 0) {
@@ -33,7 +39,7 @@ struct ExpandedView: View {
                         tabButton(tab, slot: layout.slot)
                     }
                 }
-                Spacer(minLength: state.notch.width + 12)
+                Spacer(minLength: middle + 12)
                 HStack(spacing: 0) {
                     ForEach(rightTabs) { tab in
                         tabButton(tab, slot: layout.slot)
@@ -43,13 +49,33 @@ struct ExpandedView: View {
                             .padding(.horizontal, 6)
                     }
                     Button {
+                        app.openSearch()
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .frame(width: TabLayout.button - 2, height: 24)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(PressableStyle())
+                    .help("Search (\(app.settings.searchShortcut.label))")
+                    Button {
+                        app.askSiri()
+                    } label: {
+                        SiriOrb(size: 15)
+                            .frame(width: TabLayout.button - 2, height: 24)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(PressableStyle())
+                    .help("Ask Siri")
+                    Button {
                         app.closeIsland()
                         app.openSettings?()
                     } label: {
                         Image(systemName: "gearshape.fill")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.75))
-                            .frame(width: TabLayout.gear - 2, height: 24)
+                            .frame(width: TabLayout.button - 2, height: 24)
                             .contentShape(Circle())
                     }
                     .buttonStyle(PressableStyle())
@@ -63,7 +89,13 @@ struct ExpandedView: View {
                     }
                 }
             }
-            .frame(height: max(state.notch.height, 28))
+            .frame(height: floating ? 28 : max(state.notch.height, 28))
+            .padding(.top, floating ? 10 : 0)
+
+            if let live {
+                LiveActivityRow(app: app, item: live)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
 
             if isPicture {
                 tabContent
@@ -78,6 +110,23 @@ struct ExpandedView: View {
         .padding(.horizontal, 14)
         .padding(.bottom, 14)
         .foregroundStyle(.white)
+        .overlay(alignment: .bottom) {
+            // Apple's minimise arrow: tuck the island back into the notch.
+            if !isPicture {
+                Button {
+                    app.closeIsland()
+                } label: {
+                    Image(systemName: "chevron.compact.up")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.35))
+                        .frame(width: 44, height: 12)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .help("Close")
+                .padding(.bottom, 1)
+            }
+        }
     }
 
     @ViewBuilder
@@ -147,8 +196,10 @@ private struct TabLayout {
     let left: Int
     let slot: CGFloat
 
-    /// Width kept for the settings button on the right.
-    static let gear: CGFloat = 28
+    /// One small button on the right (search, Siri, settings).
+    static let button: CGFloat = 26
+    /// Width kept for the search, Siri and settings buttons on the right.
+    static let gear: CGFloat = button * 3
 
     static func make(count: Int, side: CGFloat) -> TabLayout {
         let total = max(1, count)

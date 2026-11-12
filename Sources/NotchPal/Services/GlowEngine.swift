@@ -29,6 +29,7 @@ enum GlowSource: Equatable {
     case music
     case meeting
     case ember
+    case siri
 
     var label: String {
         switch self {
@@ -39,6 +40,7 @@ enum GlowSource: Equatable {
         case .music: "What's playing"
         case .meeting: "A meeting about to start"
         case .ember: "The resting ember"
+        case .siri: "Siri or Apple Intelligence"
         }
     }
 }
@@ -123,6 +125,8 @@ final class GlowEngine {
     private(set) var heartbeat = 0
     /// The wallpaper around the notch is light, so the glow uses deeper colours.
     private(set) var lightBackdrop = false
+    /// When Siri was opened from the notch, so it glows straight away.
+    private(set) var siriOpenedAt: Date?
     @ObservationIgnored private var backdropURL: URL?
     @ObservationIgnored private var backdropObservers: [NSObjectProtocol] = []
 
@@ -174,9 +178,9 @@ final class GlowEngine {
             apply(BackdropProbe.brightness(of: url))
             return
         }
-        Task.detached(priority: .utility) { [weak self] in
-            let brightness = BackdropProbe.brightness(of: url)
-            await MainActor.run { self?.apply(brightness) }
+        Task { [weak self] in
+            let brightness = await Task.detached(priority: .utility) { BackdropProbe.brightness(of: url) }.value
+            self?.apply(brightness)
         }
     }
 
@@ -184,6 +188,13 @@ final class GlowEngine {
         // A wallpaper that can't be read keeps the usual light-on-dark look.
         let light = (brightness ?? 0) > 0.6
         if lightBackdrop != light { lightBackdrop = light }
+    }
+
+    /// Siri was opened from the notch: glow in its colours for a few seconds, longer if it's seen.
+    func noteSiriOpened() {
+        let now = Date()
+        siriOpenedAt = now
+        refresh(at: now.addingTimeInterval(5.1))
     }
 
     func showPreview(seconds: TimeInterval = 4) {
@@ -223,6 +234,12 @@ final class GlowEngine {
         let settings = app.settings
         guard settings.glowEnabled else { return nil }
 
+        // Siri listening, or Apple Intelligence thinking: its colours flow around the notch.
+        let siriJustOpened = siriOpenedAt.map { now.timeIntervalSince($0) < 5 } ?? false
+        if app.activities.siriActive || siriJustOpened || app.search.answering {
+            return Glow(colors: IntelligenceColors.all, source: .siri, rhythm: .flow, strength: 1, key: "siri")
+        }
+
         if settings.glowAlerts, let alert = app.alerts.current, let glow = alertGlow(alert) {
             return glow
         }
@@ -258,7 +275,7 @@ final class GlowEngine {
         case .lowBattery:
             return Glow(colors: [GlowColors.red, GlowColors.orange, GlowColors.red],
                         source: .alert, rhythm: .urgent, strength: 1, key: "low-battery")
-        case .device:
+        case .device, .audioSwitch:
             return Glow(colors: [GlowColors.white, GlowColors.cyan, GlowColors.white],
                         source: .alert, rhythm: .breathe, strength: 0.9, key: "device")
         case .timerDone:

@@ -50,6 +50,8 @@ final class AudioService {
 
     /// Called when the Mac switches to a new wireless output, e.g. AirPods connecting.
     @ObservationIgnored var onWirelessConnect: (@MainActor (AudioOutput) -> Void)?
+    /// Called when sound moves to any other output, like the speakers or a display.
+    @ObservationIgnored var onOutputSwitch: (@MainActor (AudioOutput) -> Void)?
 
     @ObservationIgnored private var started = false
     @ObservationIgnored private var watchedDevice: AudioDeviceID = 0
@@ -100,9 +102,12 @@ final class AudioService {
         current = outputs.first { $0.id == id }
         watchVolume(of: id)
         readVolume()
-        if announce, let current, current.id != previous?.id,
-           current.isWireless || current.name.lowercased().contains("airpods") {
-            onWirelessConnect?(current)
+        if announce, let current, current.id != previous?.id {
+            if current.isWireless || current.name.lowercased().contains("airpods") {
+                onWirelessConnect?(current)
+            } else if previous != nil {
+                onOutputSwitch?(current)
+            }
         }
     }
 

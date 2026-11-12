@@ -103,6 +103,12 @@ final class IslandState {
     var fullScreenApp: FullScreenApp?
     /// When the opening animation started. The island stays the size of the notch while it plays.
     var introStart: Date?
+    /// The island is open as a search bar.
+    var searching = false
+    /// The guided tour that explains NotchPal (or what's new), one card at a time.
+    var tour: TourState?
+    /// Where the pointer is just below the notch, for the black-hole effect. Nil when it's away.
+    var pointer: CGPoint?
 
     var effectsPanelOpen: Bool { effectsPanelOpenedAt != nil }
 }

@@ -6,6 +6,10 @@ import SwiftUI
 
 /// What the island is showing right now, in priority order.
 enum IslandContent: Equatable {
+    /// The search bar, like Spotlight in Apple's island.
+    case search
+    /// The guided tour.
+    case tour
     case expanded
     case drop
     case alert(IslandAlert)
@@ -17,6 +21,9 @@ enum IslandContent: Equatable {
 
 /// What the closed island's wings are about.
 enum CompactKind: Equatable {
+    case screenRecording
+    case call
+    case recording
     case music
     case timer
     /// Pet, battery and privacy dots, when nothing else is live.
@@ -28,7 +35,7 @@ struct IslandGeometry: Equatable {
     var size: CGSize
     var topRadius: CGFloat
     var bottomRadius: CGFloat
-    /// Diameter of the separate timer bubble, or 0 when there isn't one.
+    /// Diameter of the second little island that splits off for a second live activity, or 0.
     var bubble: CGFloat
 }
 
@@ -39,7 +46,17 @@ enum IslandLayout {
     static let bubbleGap: CGFloat = 6
 
     static func content(_ app: AppModel) -> IslandContent {
-        if app.state.mode == .expanded { return .expanded }
+        if app.state.mode == .expanded {
+            if app.state.searching { return .search }
+            if app.state.tour != nil { return .tour }
+            return .expanded
+        }
+        return closedContent(app)
+    }
+
+    /// What the notch shows when it isn't open. With the floating style, the notch keeps showing
+    /// this while the open island floats below it.
+    static func closedContent(_ app: AppModel) -> IslandContent {
         // The opening animation traces the real notch, so the island waits in it until that's done.
         if app.state.introStart != nil { return .idle }
         if app.state.isDropTargeted { return .drop }
@@ -120,14 +137,45 @@ enum IslandLayout {
         return min(1.45, max(0.72, min(byHeight, byWidth)))
     }
 
+    /// Everything live right now, most important first, like Live Activities on Apple's island:
+    /// a screen recording, a call, a recording, music, then a timer.
+    static func liveItems(_ app: AppModel) -> [LiveItem] {
+        var items: [LiveItem] = []
+        if app.settings.liveActivities {
+            let activities = app.activities
+            if let screen = activities.screenRecording { items.append(screen) }
+            if let call = activities.call { items.append(call) }
+            if let recording = activities.recording { items.append(recording) }
+        }
+        if app.nowPlaying.showsActivity { items.append(LiveItem(kind: .music)) }
+        if app.timer.isActive || app.timer.finished { items.append(LiveItem(kind: .timer)) }
+        return items
+    }
+
     static func hasLiveActivity(_ app: AppModel) -> Bool {
-        app.nowPlaying.showsActivity || app.timer.isActive || app.timer.finished
+        !liveItems(app).isEmpty
     }
 
     static func compactKind(_ app: AppModel) -> CompactKind {
-        if app.nowPlaying.showsActivity { return .music }
-        if app.timer.isActive || app.timer.finished { return .timer }
-        return .ambient
+        switch liveItems(app).first?.kind {
+        case .screenRecording: return .screenRecording
+        case .call: return .call
+        case .recording: return .recording
+        case .music: return .music
+        case .timer: return .timer
+        case nil: return .ambient
+        }
+    }
+
+    /// The live activity in the wings, if any.
+    static func primaryItem(_ app: AppModel) -> LiveItem? {
+        liveItems(app).first
+    }
+
+    /// The second live activity, which splits off into its own little island.
+    static func bubbleItem(_ app: AppModel) -> LiveItem? {
+        let items = liveItems(app)
+        return items.count >= 2 ? items[1] : nil
     }
 
     /// Whether the battery should sit in the closed notch right now.
@@ -151,19 +199,64 @@ enum IslandLayout {
         app.settings.pet || showsBattery(app) || showsPrivacyDots(app)
     }
 
-    /// With music and a timer at once, music keeps the island and the timer gets
-    /// its own little bubble beside it, like two live activities on iPhone.
+    /// With two things live at once (music and a timer, a call and music), the first keeps the
+    /// island and the second splits off into its own little island beside it, like a droplet.
     static func showsBubble(_ app: AppModel) -> Bool {
-        content(app) == .compact && app.nowPlaying.showsActivity && app.timer.isActive
+        app.settings.splitActivities && content(app) == .compact && bubbleItem(app) != nil
+    }
+
+    /// Whether the open island floats below the notch as its own widget, like Apple's new MacBook Pro.
+    static func floats(_ app: AppModel) -> Bool {
+        guard app.settings.openStyle == .floating else { return false }
+        switch content(app) {
+        case .expanded, .search, .tour: return true
+        default: return false
+        }
+    }
+
+    /// Space between the notch and the floating island.
+    static let cardGap: CGFloat = 8
+
+    /// The floating island's size, when it's floating.
+    static func cardSize(_ app: AppModel) -> CGSize? {
+        guard floats(app) else { return nil }
+        let notch = app.state.notch
+        let settings = app.settings
+        switch content(app) {
+        case .expanded:
+            return CGSize(width: max(CGFloat(settings.openWidth), notch.width + 260), height: openHeight(app) + 38)
+        case .search:
+            return CGSize(width: max(CGFloat(settings.openWidth), 580), height: app.search.bodyHeight + 18)
+        case .tour:
+            return TourView.size
+        default:
+            return nil
+        }
     }
 
     static func geometry(_ app: AppModel) -> IslandGeometry {
+        // Floating: the notch keeps its closed shape and the island floats below it.
+        geometry(app, for: floats(app) ? closedContent(app) : content(app))
+    }
+
+    static func geometry(_ app: AppModel, for content: IslandContent) -> IslandGeometry {
         let notch = app.state.notch
         let settings = app.settings
         let peek = app.state.mode == .peek
         let closedHeight = notch.height + CGFloat(settings.closedExtraHeight)
 
-        switch content(app) {
+        switch content {
+        case .tour:
+            return IslandGeometry(
+                size: CGSize(width: max(TourView.size.width, notch.width + 260), height: notch.height + TourView.size.height - 10),
+                topRadius: 14, bottomRadius: 28, bubble: 0
+            )
+        case .search:
+            return IslandGeometry(
+                size: CGSize(width: max(CGFloat(settings.openWidth), notch.width + 360, 580),
+                             height: notch.height + app.search.bodyHeight + 8),
+                topRadius: 14, bottomRadius: 26, bubble: 0
+            )
         case .expanded:
             return IslandGeometry(
                 size: CGSize(width: max(CGFloat(settings.openWidth), notch.width + 260),

@@ -34,6 +34,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard app.settings.deviceAlerts else { return }
             app.alerts.show(.device(name: output.name, symbol: output.symbol))
         }
+        app.audio.onOutputSwitch = { output in
+            guard app.settings.deviceAlerts else { return }
+            app.alerts.show(.audioSwitch(name: output.name, symbol: output.symbol))
+        }
         app.timer.onFinish = {
             app.alerts.show(.timerDone)
         }
@@ -61,7 +65,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         app.privacy.start()
         app.calendar.start()
         app.glow.start()
+        if app.settings.liveActivities {
+            app.activities.start()
+        }
         app.badges.setEnabled(app.settings.badgesEnabled)
+
+        // Search in the notch from any app.
+        app.hotKey.onPress = { app.toggleSearch() }
+        app.hotKey.register(app.settings.searchShortcut)
 
         island = IslandController(app: app)
         menuBar = MenuBarController(app: app)
@@ -82,7 +93,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Both wait for the opening animation to finish.
         let defaults = UserDefaults.standard
         let helloDelay = app.state.introStart != nil ? LaunchIntro.duration - 0.25 : 0.6
-        if let version = defaults.string(forKey: UpdateService.justUpdatedKey) {
+
+        // New here: a tour of what NotchPal does. Just updated: a tour of what's new.
+        // Someone who used NotchPal before has some of these saved already.
+        let current = app.updates.currentVersion
+        let seenTour = defaults.string(forKey: AppModel.tourSeenKey)
+        let usedBefore = ["lastUpdateCheck", UpdateService.justUpdatedKey, "seenMusicApps", "quickNote", "glowStyle"]
+            .contains { defaults.object(forKey: $0) != nil }
+        var tour: TourKind?
+        if seenTour == nil && !usedBefore {
+            tour = .welcome
+        } else if seenTour != current && Tours.versionsWithNews.contains(current) {
+            tour = .whatsNew(version: current)
+        }
+        if let tour {
+            defaults.removeObject(forKey: UpdateService.justUpdatedKey)
+            DispatchQueue.main.asyncAfter(deadline: .now() + helloDelay) {
+                MainActor.assumeIsolated { app.startTour(tour) }
+            }
+        } else if let version = defaults.string(forKey: UpdateService.justUpdatedKey) {
             defaults.removeObject(forKey: UpdateService.justUpdatedKey)
             DispatchQueue.main.asyncAfter(deadline: .now() + helloDelay) {
                 MainActor.assumeIsolated { app.alerts.show(.updated(version: version)) }

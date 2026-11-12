@@ -11,6 +11,8 @@ enum IslandAlert: Hashable {
     case charging(level: Int)
     case lowBattery(level: Int)
     case device(name: String, symbol: String)
+    /// Sound moved to another output, like the speakers or a display.
+    case audioSwitch(name: String, symbol: String)
     case nowPlaying(title: String)
     case timerDone
     /// A calendar event is about to start. `link` is its meeting URL, if any.
@@ -41,7 +43,7 @@ enum IslandAlert: Hashable {
         switch self {
         case .welcome: .app
         case .charging, .lowBattery: .power
-        case .device: .device
+        case .device, .audioSwitch: .device
         case .nowPlaying: .media
         case .timerDone: .timer
         case .event: .calendar
@@ -54,7 +56,7 @@ enum IslandAlert: Hashable {
     var showsInFullScreen: Bool {
         switch self {
         case .lowBattery, .timerDone, .event, .message, .updating, .updateFailed: true
-        case .welcome, .charging, .device, .nowPlaying, .updateAvailable, .updated: false
+        case .welcome, .charging, .device, .audioSwitch, .nowPlaying, .updateAvailable, .updated: false
         }
     }
 
@@ -65,6 +67,7 @@ enum IslandAlert: Hashable {
         case .charging: 3
         case .lowBattery: 4.5
         case .device: 3.2
+        case .audioSwitch: 2.8
         case .nowPlaying: 3.2
         case .timerDone: nil
         case .event: 10
@@ -81,6 +84,7 @@ enum IslandAlert: Hashable {
         case .welcome: 360
         case .charging, .lowBattery: 380
         case .device: 400
+        case .audioSwitch: 420
         case .nowPlaying: 440
         case .timerDone: 380
         case .event: 460

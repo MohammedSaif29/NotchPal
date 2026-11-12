@@ -1,6 +1,6 @@
 # NotchPal
 
-**The notch that's alive.** NotchPal turns your MacBook's notch into an iPhone-style Dynamic Island, with music from any app, a camera mirror, live alerts, a pet and games built right in.
+**The notch that's alive.** NotchPal turns your MacBook's notch into a Dynamic Island like the one on Apple's newest MacBook Pro: search and Apple Intelligence right in the notch, Live Activities for calls and recordings, music from any app, a camera mirror, live alerts, a pet and games built right in.
 
 Free. Open source. No account, no tracking, no ads.
 
@@ -21,7 +21,7 @@ Made by **Mohammed Saif** · [LinkedIn](https://www.linkedin.com/in/saif-mohamme
 3. Double-click NotchPal to open it. macOS will say it can't verify the app. Click **Done**, not Move to Trash.
    This happens because NotchPal is free and isn't signed with a paid Apple developer account yet. The code is all here for anyone to check.
 4. Open **System Settings → Privacy & Security**, scroll down to **Security**, and click **Open Anyway** next to NotchPal. Confirm with your password or Touch ID. You only do this once.
-5. That's it. Move your pointer onto the notch to open the island. NotchPal also puts a small capsule icon in the menu bar, with Settings, About and Quit.
+5. That's it. A short tour in the notch shows you around. Click the notch (or swipe down on it with two fingers) to open the island, and press **⌥ Space** to search. NotchPal also puts a small capsule icon in the menu bar, with Settings, About and Quit.
 
 **If macOS says NotchPal "is damaged", or music doesn't show up:** open **Terminal** and run this, then open NotchPal again:
 
@@ -39,7 +39,19 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 
 **Uninstall:** click the capsule icon in the menu bar → Quit NotchPal, then drag NotchPal from Applications to the Trash.
 
-## What it does (v0.6)
+## What it does (v0.7)
+
+**Like Apple's new Mac Dynamic Island, on every Mac**
+- **A floating island**: click the notch, or swipe down on it with two fingers, and the island splits off and floats just below the notch like a droplet. Push up to send it back. Prefer it attached to the notch, or opening on hover? Both are in Settings → General.
+- **Pointer black hole**: bring the pointer up under the notch and a drop of the notch stretches down to pull it in.
+- **A tour in the notch**: new users get a short welcome tour, and after an update the notch shows what's new. See it again in Settings → General.
+- **Search in the notch**: press **⌥ Space** (or click 🔍) and the notch drops open into a search bar, like Spotlight on Apple's island. Find apps, files and System Settings, do maths (`24*7`), run quick commands (`timer 10m`, `note buy milk`, `pause`, `next`), or search the web.
+- **Apple Intelligence in the notch**: type a question and Apple Intelligence answers right inside the notch, privately on your Mac, with follow-up questions. Needs an Apple silicon Mac on macOS 26 or newer with Apple Intelligence turned on.
+- **Siri in the notch**: a Siri button in search and the open island, and a rainbow glow around the notch while Siri listens. Or send your question to Claude or ChatGPT.
+- **Live Activities**: a call in FaceTime, Zoom, Meet, Teams or WhatsApp, a Voice Memos recording or a screen recording shows in the notch with its timer, like Apple's pills. Open the island to jump back to the call or stop the screen recording.
+- **Island mitosis**: with two things live, the second splits off the notch like a water droplet, and melts back in when it's done.
+- **More pills**: switch to AirPods or another speaker and the notch says where your sound is playing now.
+- **Glass from ultra clear to fully tinted**, like macOS 27, with text that stays readable over bright windows.
 
 **In the closed notch**
 - **Glow**: a soft light around the notch. At rest it's a faint, still ember in your accent colour. A new song pulses in the album's colours for a few seconds, then holds its main colour. A timer goes green, yellow, then red, the camera and microphone glow green or orange, and charging, low battery, meetings and messages flash it. Pick Halo, Neon, Aurora or Ripple, and choose what lights it in Settings → Glow. A still glow uses no battery.
@@ -49,9 +61,8 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 - **Pal, the notch pet**: dances to music, munches electricity while charging, sweats when the battery is low, and naps late at night. Choose Lively, Calm or Still.
 - **Easy on the eyes**: brightness sliders for the closed notch and the open island, a soft white Pal, and Reduce Motion support.
 - **Updates itself**: when a new version is out, the notch tells you. One click downloads it, checks it and restarts NotchPal, like an app update on your phone.
-- **Stays out of your way**: the closed island never blocks clicks on the menu bar items next to it, it hides while a movie or video plays full screen (hover the notch to bring it back; full-screen browsing and work apps keep it), and on Macs without a notch it stays hidden until you hover the top middle of the screen.
+- **Stays out of your way**: the closed island never blocks clicks on the menu bar items next to it, it hides while a movie or video plays full screen (point at the notch to bring it back; full-screen browsing and work apps keep it), and on Macs without a notch it stays hidden until you hover the top middle of the screen.
 - **Privacy dots**: green while any app uses the camera, orange for the microphone, like iPhone.
-- **Two live activities at once**: with music and a timer running, the timer splits into its own bubble.
 - **Live alerts**: charging, low battery, AirPods, new song, meetings about to start (with a Join button), new messages, timer done.
 
 **Widgets in the open island** (turn them on, off and reorder them in Settings, or right-click any icon in the island to hide or move it)
@@ -65,7 +76,7 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 
 **Settings**
 - Size: open width and length, corner roundness, closed wing width and height.
-- Look: Black, Liquid Glass, Frosted or Clear, with darkness, tint colour, shiny edge, glass when closed, shadow and accent colour.
+- Look: Black, Liquid Glass, Frosted or Clear, with a glass slider from ultra clear to fully tinted, readable text, tint colour, shiny edge, glass when closed, shadow and accent colour.
 - Motion: Snappy, Smooth, Gentle, Liquid or Bouncy, and content that appears with a Blur, Fade, Slide or Pop.
 
 ## Pictures

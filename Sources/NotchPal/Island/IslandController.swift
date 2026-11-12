@@ -48,6 +48,16 @@ final class IslandController {
         }
         reposition()
         panel.orderFrontRegardless()
+        app.focusIsland = { [weak self] in self?.takeKeyboard() }
+        // Clicking anywhere else closes search, like Spotlight.
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: panel, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.app.state.searching else { return }
+                self.app.closeSearch()
+            }
+        })
         startWatchingMouse()
         startWatchingKeys()
         startWatchingMenus()
@@ -106,6 +116,12 @@ final class IslandController {
         let width = geometry.size.width + geometry.topRadius * 2
         var area = NSRect(x: frame.midX - width / 2, y: frame.maxY - geometry.size.height,
                           width: width, height: geometry.size.height)
+        // The floating island, and the gap between it and the notch.
+        if let card = IslandLayout.cardSize(app) {
+            let top = geometry.size.height + IslandLayout.cardGap
+            area = area.union(NSRect(x: frame.midX - card.width / 2, y: frame.maxY - top - card.height,
+                                     width: card.width, height: card.height))
+        }
         if geometry.bubble > 0 {
             let bubbleWidth = geometry.bubble + 8
             area = area.union(NSRect(x: frame.midX + width / 2 + IslandLayout.bubbleGap,
@@ -118,6 +134,7 @@ final class IslandController {
     private func tick() {
         guard let screen else { return }
         let inside = hitArea(on: screen.frame).contains(NSEvent.mouseLocation)
+        trackPointer(on: screen.frame)
         if panel.ignoresMouseEvents == inside {
             panel.ignoresMouseEvents = !inside
         }
@@ -148,7 +165,9 @@ final class IslandController {
             // More grace mid-game, so a wobbly mouse doesn't end your run.
             let playing = state.tab == .play && app.games.current.phase == .running
             let grace: TimeInterval = playing ? 1.2 : 0.45
+            // Search and the tour stay open until you pick something, press Esc or click elsewhere.
             let held = (state.holdOpenUntil.map { now < $0 } ?? false) || state.effectsPanelOpen
+                || state.searching || state.tour != nil
             if inside && state.holdOpenUntil != nil {
                 state.holdOpenUntil = nil // The mouse arrived, so normal hover rules apply.
             }
@@ -185,6 +204,8 @@ final class IslandController {
             hoverStart = nil
         }
         if old == .expanded && new != .expanded {
+            app.state.searching = false
+            app.state.tour = nil
             endEffectsWatch()
             app.games.pauseAll()
             app.camera.stop() // Never leave the camera on once the island closes.
@@ -250,6 +271,12 @@ final class IslandController {
         effectsTicks = 0
     }
 
+    /// Search needs the keyboard straight away, even when it's opened by the shortcut from another app.
+    private func takeKeyboard() {
+        lastInside = Date().addingTimeInterval(1.5)
+        panel.makeKey()
+    }
+
     /// Hand typing back to whatever app you were using before the island opened.
     private func giveBackKeyboard() {
         guard panel.isKeyWindow else { return }
@@ -292,6 +319,7 @@ final class IslandController {
 
     private func handleSwipe(_ swipe: SwipeSample) -> Bool {
         let state = app.state
+        if handlePull(swipe) { return true }
         guard app.settings.swipeGestures, swipe.precise, app.nowPlaying.track != nil,
               state.mode != .expanded || state.tab == .home
         else { return false }
@@ -322,6 +350,62 @@ final class IslandController {
             }
         }
         return true
+    }
+
+    // MARK: Pull down, push up
+
+    private var pullDistance: CGFloat = 0
+    private var pullFired = false
+
+    /// Two fingers down on the notch opens the island, like pulling down Apple's; up on the notch closes it.
+    /// Only over the notch itself, so scrolling inside the open island still scrolls.
+    private func handlePull(_ swipe: SwipeSample) -> Bool {
+        guard swipe.precise, let screen else { return false }
+        let state = app.state
+        let fromTop = screen.frame.maxY - NSEvent.mouseLocation.y
+        let notchHeight = max(IslandLayout.geometry(app).size.height, state.notch.height)
+        let overNotch = state.mode != .expanded || fromTop <= notchHeight + 2
+        if swipe.began || swipe.ended {
+            pullDistance = 0
+            pullFired = false
+        }
+        guard overNotch, !swipe.momentum, abs(swipe.dy) > abs(swipe.dx) * 1.2 else { return false }
+        // Measured in the direction the fingers moved: positive is down.
+        pullDistance += swipe.inverted ? swipe.dy : -swipe.dy
+        if !pullFired && pullDistance > 26 && state.mode != .expanded {
+            pullFired = true
+            app.openIsland()
+            return true
+        }
+        if !pullFired && pullDistance < -26 && state.mode == .expanded && !state.searching {
+            pullFired = true
+            if state.tour != nil { app.endTour() } else { app.closeIsland() }
+            return true
+        }
+        return state.mode != .expanded
+    }
+
+    // MARK: Black hole
+
+    /// Where the pointer is just under the notch, for the black-hole pull. Only while it's close.
+    private func trackPointer(on frame: NSRect) {
+        let state = app.state
+        guard app.settings.pointerMagnet, state.mode != .expanded else {
+            if state.pointer != nil { state.pointer = nil }
+            return
+        }
+        let mouse = NSEvent.mouseLocation
+        let geometry = IslandLayout.geometry(app)
+        let width = geometry.size.width + geometry.topRadius * 2
+        let point = CGPoint(x: mouse.x - frame.midX, y: frame.maxY - mouse.y)
+        let near = abs(point.x) < width / 2 + 30 && point.y > geometry.size.height - 2
+            && point.y < geometry.size.height + PointerMagnet.reach && geometry.size.height > 0
+        if near {
+            if let old = state.pointer, abs(old.x - point.x) < 0.5, abs(old.y - point.y) < 0.5 { return }
+            state.pointer = point
+        } else if state.pointer != nil {
+            state.pointer = nil
+        }
     }
 
     // MARK: Keyboard
@@ -361,6 +445,25 @@ final class IslandController {
 
     private func handleKey(_ keyCode: UInt16) -> Bool {
         guard app.state.mode == .expanded else { return false }
+        if app.state.searching {
+            // Esc goes back from an answer, or closes search. Everything else is typing.
+            if keyCode == 53 {
+                app.search.escape()
+                return true
+            }
+            return false
+        }
+        if let tour = app.state.tour {
+            let last = Tours.steps(tour.kind, app: app).count - 1
+            switch keyCode {
+            case 53: app.endTour()                                  // Esc
+            case 123: app.moveTour(by: -1)                          // Left arrow
+            case 124, 36, 49:                                       // Right arrow, Return, Space
+                if tour.step >= last { app.endTour() } else { app.moveTour(by: 1) }
+            default: return false
+            }
+            return true
+        }
         if keyCode == 53 { // Esc
             app.closeIsland()
             return true
