@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NotchPal: a free Dynamic Island for every Mac</title>
+  <meta name="description" content="NotchPal turns your MacBook's notch into a Dynamic Island like the new MacBook Pro's: search, Apple Intelligence, Live Activities and music in the notch. Free and open source for macOS 14 and later.">
+  <link rel="canonical" href="https://getnotchpal.com/">
+  <meta name="theme-color" content="#f1efe8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NotchPal">
+  <meta property="og:url" content="https://getnotchpal.com/">
+  <meta property="og:title" content="NotchPal: a free Dynamic Island for every Mac">
+  <meta property="og:description" content="Search, Apple Intelligence, Live Activities and music in your MacBook's notch. Free and open source.">
+  <meta property="og:image" content="https://getnotchpal.com/img/share.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="NotchPal: a Dynamic Island for every Mac, with the island floating below a MacBook notch">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "NotchPal",
+    "description": "NotchPal turns a MacBook's notch into a Dynamic Island with search, Apple Intelligence, Live Activities and music.",
+    "url": "https://getnotchpal.com/",
+    "image": "https://getnotchpal.com/img/share.png",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS 14 or later",
+    "softwareVersion": "0.7.1",
+    "downloadUrl": "https://github.com/MohammedSaif29/NotchPal/releases/latest",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Mohammed Saif", "url": "https://github.com/MohammedSaif29" }
+  }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="notch.js" defer></script>
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- A working NotchPal island, hanging from the top of the page like the notch on a MacBook. -->
+  <div class="island" id="island" data-state="closed" data-live="music">
+    <svg class="island-ink" id="island-ink" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="goo" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur"/>
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"/>
+        </filter>
+      </defs>
+      <g filter="url(#goo)">
+        <rect id="ink-notch" rx="10"/>
+        <rect id="ink-card" rx="26"/>
+        <circle id="ink-drop" r="0"/>
+        <circle id="ink-bubble" r="0"/>
+      </g>
+    </svg>
+    <svg class="island-intro" id="island-intro" aria-hidden="true" focusable="false">
+      <path id="intro-left"/>
+      <path id="intro-right"/>
+    </svg>
+
+    <button class="notch" id="notch" type="button" aria-expanded="false" aria-controls="island-card">
+      <span class="sr-only">Open the NotchPal island</span>
+      <span class="notch-lead" aria-hidden="true">
+        <span class="art art-small"></span>
+        <svg class="call-glyph" viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+      </span>
+      <span class="notch-trail" aria-hidden="true">
+        <span class="wave"><i></i><i></i><i></i><i></i></span>
+        <span class="call-time" id="call-time">0:00</span>
+      </span>
+    </button>
+
+    <div class="bubble" id="bubble" aria-hidden="true"><span class="art art-small"></span></div>
+
+    <div class="card" id="island-card" role="region" aria-label="NotchPal island" inert>
+      <div class="card-home" id="card-home">
+        <div class="card-bar">
+          <div class="tabs" aria-hidden="true">
+            <span class="tab is-on"><svg viewBox="0 0 24 24"><path d="M9 18.5a2.5 2.5 0 1 1-2.5-2.5H9V5l11-2v13.5a2.5 2.5 0 1 1-2.5-2.5H20"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h2l1.5-2h4l1.5 2h2A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.5"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg></span>
+          </div>
+          <span class="clock" id="clock">9:41</span>
+          <button class="icon-button" type="button" id="open-search" aria-label="Search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>
+          </button>
+          <button class="orb" type="button" id="ask-orb" aria-label="Ask Apple Intelligence (demo)"></button>
+        </div>
+        <div class="player">
+          <div class="now">
+            <span class="art art-large" aria-hidden="true"></span>
+            <div class="track">
+              <strong>Golden Hour Drive</strong>
+              <span>NotchPal Radio</span>
+            </div>
+            <span class="wave wave-large" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="progress" aria-hidden="true"><span>1:48</span><i><b></b></i><span>-2:05</span></div>
+          <div class="controls">
+            <button type="button" class="control" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7l-7 5 7 5zM20 7l-7 5 7 5z"/></svg></button>
+            <button type="button" class="control control-main" id="play" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="pause-glyph" d="M8 6h3v12H8zM13 6h3v12h-3z"/><path class="play-glyph" d="M8 5.5v13l10.5-6.5z"/></svg></button>
+            <button type="button" class="control" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l7 5-7 5zM13 7l7 5-7 5z"/></svg></button>
+          </div>
+        </div>
+        <div class="side" aria-hidden="true">
+          <span class="airdrop">AirDrop</span>
+          <span class="battery"><i></i>82%</span>
+        </div>
+      </div>
+
+      <div class="card-search" id="card-search">
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>
+          <label class="sr-only" for="search-input">Try NotchPal search</label>
+          <input id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search apps, files, maths…">
+          <span class="orb orb-still" aria-hidden="true"></span>
+        </div>
+        <ul class="results" id="results" aria-live="polite"></ul>
+        <p class="answer" id="answer" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <header class="top">
+    <a class="wordmark" href="./" aria-label="NotchPal home">NotchPal</a>
+    <nav aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#safety">Safety</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/MohammedSaif29/NotchPal">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <h1>A Dynamic Island for every&nbsp;Mac</h1>
+      <p class="lead">NotchPal turns your MacBook's notch into a living island, the way Apple's newest MacBook Pro does it: search, Apple Intelligence, Live Activities and your music, right at the top of the screen. Free and open source.</p>
+      <div class="cta">
+        <a class="button" id="download" href="https://github.com/MohammedSaif29/NotchPal/releases/latest">Download for Mac</a>
+        <p class="fine" id="download-note">For macOS 14 Sonoma or later on Apple silicon.</p>
+      </div>
+      <p class="try"><span class="try-pointer">Click</span><span class="try-touch">Tap</span> the notch at the top of this page<span class="try-keys">, or press <kbd>⌥</kbd> <kbd>Space</kbd></span>.</p>
+    </section>
+
+    <section class="feature" id="features">
+      <figure class="screen">
+        <img src="img/floating-island.webp" width="1184" height="558" alt="The NotchPal island floating below the notch, playing a song, with AirDrop and a battery ring beside the player">
+      </figure>
+      <div class="copy">
+        <h2>Click the notch, and the island floats</h2>
+        <p>The island splits off the notch and floats just below it like a droplet, then melts back in when you're done. Swipe down on the notch with two fingers to open it, and push up to close it. Bring the pointer up under the notch and it gets pulled in.</p>
+      </div>
+    </section>
+
+    <section class="feature feature-flip">
+      <figure class="screen">
+        <img src="img/search.webp" width="1384" height="734" alt="NotchPal search below the notch working out 24 times 7 equals 168, with rows to ask Apple Intelligence, Siri, Claude and ChatGPT">
+      </figure>
+      <div class="copy">
+        <h2>Search and ask, from anywhere</h2>
+        <p>Press <kbd>⌥</kbd> <kbd>Space</kbd> and a search bar drops out of the notch. Open apps, files and System Settings, do maths as you type, start a timer or jot down a note. Ask a question and Apple Intelligence answers right in the notch, privately on your Mac, or hand it to Siri, Claude or ChatGPT.</p>
+        <p class="fine">Apple Intelligence needs an Apple silicon Mac on macOS 26 or later, with Apple Intelligence turned on.</p>
+      </div>
+    </section>
+
+    <section class="feature" id="live">
+      <figure class="screen screen-live" aria-label="A call in the notch with a running timer, and music split off into its own droplet">
+        <div class="live-scene" aria-hidden="true">
+          <span class="live-notch"><svg class="call-glyph" viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg><b>12:07</b></span>
+          <span class="live-drop"><span class="art art-small"></span></span>
+        </div>
+      </figure>
+      <div class="copy">
+        <h2>Live Activities, like on iPhone</h2>
+        <p>Calls in FaceTime, Zoom, Meet, Teams and WhatsApp, Voice Memos recordings and screen recordings show in the notch with a running clock. When two things are live, the second splits off like a droplet. Switch to AirPods and the notch tells you where your sound is playing.</p>
+        <p class="fine">Look at the notch at the top of this page while you read this.</p>
+      </div>
+    </section>
+
+    <section class="more" aria-labelledby="more-title">
+      <h2 id="more-title">Everything else in the notch</h2>
+      <dl class="more-list">
+        <div><dt>Music from any app</dt><dd>Spotify, Apple Music, YouTube in your browser and more, with album art and a visualiser tinted to the cover.</dd></div>
+        <div><dt>A soft glow</dt><dd>A faint, still light at rest. It pulses with a new song, counts down a timer, and turns green while the camera is on.</dd></div>
+        <div><dt>Mirror</dt><dd>Check yourself before a call, with Centre Stage and reactions. The camera is only on while the mirror is open.</dd></div>
+        <div><dt>Calendar</dt><dd>Today's events, with one-click Join for Zoom, Meet, Teams, FaceTime and Webex.</dd></div>
+        <div><dt>Notes, timers and games</dt><dd>A scratchpad that saves itself, quick timers, and Runner, Flappy, Snake and Pong.</dd></div>
+        <div><dt>Battery, your way</dt><dd>A ring, a pill, the classic battery or just the number, in iPhone colours.</dd></div>
+        <div><dt>Pal, the notch pet</dt><dd>Dances to music, munches electricity while charging and naps late at night.</dd></div>
+        <div><dt>A tour built in</dt><dd>New users get a short tour in the notch, and after each update it shows what's new.</dd></div>
+      </dl>
+      <div class="strip">
+        <figure class="screen"><img src="img/games.webp" width="1240" height="480" loading="lazy" alt="The Games tab with Runner, Flappy, Snake and Pong"></figure>
+        <figure class="screen"><img src="img/timer.webp" width="1240" height="480" loading="lazy" alt="The Timer tab with quick timers"></figure>
+        <figure class="screen"><img src="img/battery-styles.webp" width="1164" height="314" loading="lazy" alt="Battery styles: ring, pill, classic and number"></figure>
+      </div>
+    </section>
+
+    <section class="safety" id="safety" aria-labelledby="safety-title">
+      <h2 id="safety-title">Safe by design</h2>
+      <div class="safety-points">
+        <div>
+          <h3>Signed updates</h3>
+          <p>Every update is signed with a key that lives inside the security chip of the maker's Mac, and each signature needs his Touch ID. NotchPal refuses any update that isn't signed. Even someone who broke into the GitHub account couldn't push a fake one.</p>
+        </div>
+        <div>
+          <h3>Collects nothing</h3>
+          <p>No account, no tracking and no ads. NotchPal only goes online to ask GitHub, once a day, whether there's a new version, and you can switch that off.</p>
+        </div>
+        <div>
+          <h3>Open source</h3>
+          <p>All the code is public for anyone to read. Official copies only come from this site and <a href="https://github.com/MohammedSaif29/NotchPal">github.com/MohammedSaif29/NotchPal</a>.</p>
+        </div>
+      </div>
+      <p class="fingerprint" id="fingerprint">Want to check your download? In Terminal, <code>shasum -a 256</code> on the zip should match the fingerprint shown next to it on the <a href="https://github.com/MohammedSaif29/NotchPal/releases/latest">release page</a>.</p>
+    </section>
+
+    <section class="install" id="install" aria-labelledby="install-title">
+      <h2 id="install-title">Install it in a minute</h2>
+      <ol class="steps">
+        <li><strong>Download NotchPal</strong> and double-click the zip.</li>
+        <li><strong>Drag NotchPal into Applications</strong>, then open it.</li>
+        <li><strong>macOS says it can't verify the app.</strong> Click Done. NotchPal is free and isn't registered with Apple's paid developer programme yet, which is why macOS asks.</li>
+        <li><strong>Open System Settings, then Privacy &amp; Security.</strong> Scroll down and click Open Anyway next to NotchPal. You only do this once.</li>
+      </ol>
+      <p>That's it. A short tour in the notch shows you around. If macOS says NotchPal is damaged, run <code>xattr -dr com.apple.quarantine /Applications/NotchPal.app</code> in Terminal and open it again.</p>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">Questions</h2>
+      <details>
+        <summary>Is NotchPal really free?</summary>
+        <p>Yes. No trial, no subscription and no ads. It's open source under the GNU GPLv3 licence.</p>
+      </details>
+      <details>
+        <summary>Which Macs does it work on?</summary>
+        <p>Any Mac with Apple silicon (M1 or newer) on macOS 14 Sonoma or later. On a Mac without a notch, NotchPal becomes a small pill under the menu bar.</p>
+      </details>
+      <details>
+        <summary>Is it the same as the new MacBook Pro's Dynamic Island?</summary>
+        <p>It brings the same ideas to your Mac: the island floats below the notch when you click it, search and Apple Intelligence live inside it, Live Activities show calls and recordings, and the pointer gets pulled in. NotchPal is made by an independent developer and isn't made by Apple.</p>
+      </details>
+      <details>
+        <summary>Will it drain my battery?</summary>
+        <p>No. When nothing changes, NotchPal stays still and uses almost no energy.</p>
+      </details>
+      <details>
+        <summary>What does NotchPal know about me?</summary>
+        <p>Nothing leaves your Mac. It asks for the camera, your calendar or Accessibility only when you first use a feature that needs it, and it never records anything. Read the <a href="privacy.html">privacy page</a>.</p>
+      </details>
+      <details>
+        <summary>How do updates work?</summary>
+        <p>When a new version is out, the notch tells you. Click Update and NotchPal downloads it, checks its signature and restarts by itself. Your settings stay.</p>
+      </details>
+      <details>
+        <summary>Who makes NotchPal?</summary>
+        <p>Mohammed Saif, a student developer. Found a bug or have an idea? <a href="https://github.com/MohammedSaif29/NotchPal/issues/new/choose">Open an issue on GitHub</a>.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="made">NotchPal is made by Mohammed Saif.</p>
+    <nav aria-label="More">
+      <a href="https://github.com/MohammedSaif29/NotchPal">GitHub</a>
+      <a href="https://www.linkedin.com/in/saif-mohammed-939902335/">LinkedIn</a>
+      <a href="https://github.com/MohammedSaif29/NotchPal/issues/new/choose">Report a problem</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+    <p class="legal">Free software under the GNU GPLv3. The NotchPal name and icon belong to Mohammed Saif. NotchPal isn't affiliated with Apple. Mac, MacBook Pro, Siri and Apple Intelligence are trademarks of Apple Inc.</p>
+  </footer>
+</body>
+</html>
