@@ -6,7 +6,7 @@ Free. Open source. No account, no tracking, no ads.
 
 Made by **Mohammed Saif** · [LinkedIn](https://www.linkedin.com/in/saif-mohammed-939902335/) · [GitHub](https://github.com/MohammedSaif29)
 
-**[⬇ Download NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)**
+**[⬇ Download NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)** · **[Website: notchpal.mohammedsaif.dev](https://notchpal.mohammedsaif.dev)**
 
 ![The island floating below the notch, with the music player, AirDrop and battery](docs/screenshots/floating-island.png)
 
@@ -111,7 +111,7 @@ These were made with NotchPal's own **Save Pictures of My Island…** (menu bar 
 
 ## Safe updates
 
-Only download NotchPal from **[github.com/MohammedSaif29/NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)**. Copies from anywhere else aren't official.
+Only download NotchPal from **[notchpal.mohammedsaif.dev](https://notchpal.mohammedsaif.dev)** or **[github.com/MohammedSaif29/NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)**. Copies from anywhere else aren't official.
 
 Every official release is signed with a key that lives inside the security chip (Secure Enclave) of the maker's Mac. That key can't be copied off the chip, and each signature needs his Touch ID. NotchPal checks that signature before installing any update and refuses anything else, so even someone who broke into the GitHub account couldn't push a fake update to you. Each release lists its signature next to the download (`NotchPal-x.y.z.zip.sig`); you don't need to do anything with it.
 
