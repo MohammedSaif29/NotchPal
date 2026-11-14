@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NotchPal demo film</title>
+<!-- The NotchPal promo film. Every frame is drawn by render(t) in film.js, so the film can be
+     recorded one exact frame at a time with promo/render.py. It reuses the website's island. -->
+<link rel="stylesheet" href="../website/styles.css">
+<style>
+  html, body { margin: 0; width: 1080px; height: 1080px; overflow: hidden; background: var(--paper); }
+  body { position: relative; }
+  .wave i, .island-intro path { animation: none !important; }
+  .island { transform-origin: 50% 0; }
+  .island .card { visibility: visible; }
+  .island-intro path { stroke: var(--ink); stroke-width: 1.6; }
+  .glow {
+    position: absolute; top: 0; left: 50%; border-radius: 40px; opacity: 0;
+    background: conic-gradient(from var(--spin, 0deg), #ff6ac1, #b47cff, #4fb6ff, #6ff0d0, #ffd66b, #ff6ac1);
+    filter: blur(22px);
+  }
+  .cap {
+    position: absolute; left: 84px; right: 84px; bottom: 104px;
+    font-weight: 800; font-stretch: 125%; font-size: 70px; line-height: 0.98;
+    letter-spacing: -0.03em; color: var(--ink); opacity: 0;
+  }
+  .cap kbd {
+    font-size: 0.62em; padding: 0.1em 0.45em; border-radius: 14px; border-width: 2px; border-bottom-width: 5px;
+    vertical-align: 0.12em; letter-spacing: 0;
+  }
+  .brand { position: absolute; left: 84px; right: 84px; top: 330px; opacity: 0; }
+  .brand h1 { margin: 0; font-weight: 850; font-stretch: 125%; font-size: 168px; line-height: 0.9; letter-spacing: -0.045em; color: var(--ink); }
+  .brand p { margin: 26px 0 0; font-size: 44px; line-height: 1.15; color: var(--charcoal); font-weight: 500; }
+  .brand .url {
+    display: inline-block; margin-top: 46px; padding: 22px 40px; border-radius: 999px;
+    background: var(--ink); color: var(--paper-high); font-size: 38px; font-weight: 700; font-stretch: 110%;
+  }
+  .brand .fine { margin-top: 26px; font-size: 30px; color: var(--gray); }
+  .cursor { position: absolute; left: 0; top: 0; width: 38px; height: 50px; opacity: 0; transform-origin: 6px 4px; }
+</style>
+</head>
+<body>
+  <div class="island" id="island" data-state="closed" data-live="music">
+    <svg class="island-ink" id="island-ink" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="goo" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur"/>
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"/>
+        </filter>
+      </defs>
+      <g filter="url(#goo)">
+        <rect id="ink-notch" rx="10"/>
+        <rect id="ink-card" rx="26"/>
+        <circle id="ink-drop" r="0"/>
+        <circle id="ink-bubble" r="0"/>
+      </g>
+    </svg>
+    <svg class="island-intro" id="island-intro" aria-hidden="true" focusable="false">
+      <path id="intro-left"/>
+      <path id="intro-right"/>
+    </svg>
+
+    <button class="notch" id="notch" type="button" aria-expanded="false" aria-controls="island-card">
+      <span class="sr-only">Open the NotchPal island</span>
+      <span class="notch-lead" aria-hidden="true">
+        <span class="art art-small"></span>
+        <svg class="call-glyph" viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+      </span>
+      <span class="notch-trail" aria-hidden="true">
+        <span class="wave"><i></i><i></i><i></i><i></i></span>
+        <span class="call-time" id="call-time">0:00</span>
+      </span>
+    </button>
+
+    <div class="glow" id="glow" aria-hidden="true"></div>
+    <div class="bubble" id="bubble" aria-hidden="true"><span class="art art-small"></span></div>
+
+    <div class="card" id="island-card" role="region" aria-label="NotchPal island">
+      <div class="card-home" id="card-home">
+        <div class="card-bar">
+          <div class="tabs" aria-hidden="true">
+            <span class="tab is-on"><svg viewBox="0 0 24 24"><path d="M9 18.5a2.5 2.5 0 1 1-2.5-2.5H9V5l11-2v13.5a2.5 2.5 0 1 1-2.5-2.5H20"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h2l1.5-2h4l1.5 2h2A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.5"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></span>
+            <span class="tab"><svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg></span>
+          </div>
+          <span class="clock" id="clock">9:41</span>
+          <button class="icon-button" type="button" id="open-search" aria-label="Search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>
+          </button>
+          <button class="orb" type="button" id="ask-orb" aria-label="Ask Apple Intelligence (demo)"></button>
+        </div>
+        <div class="player">
+          <div class="now">
+            <span class="art art-large" aria-hidden="true"></span>
+            <div class="track">
+              <strong>Golden Hour Drive</strong>
+              <span>NotchPal Radio</span>
+            </div>
+            <span class="wave wave-large" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="progress" aria-hidden="true"><span>1:48</span><i><b></b></i><span>-2:05</span></div>
+          <div class="controls">
+            <button type="button" class="control" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7l-7 5 7 5zM20 7l-7 5 7 5z"/></svg></button>
+            <button type="button" class="control control-main" id="play" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="pause-glyph" d="M8 6h3v12H8zM13 6h3v12h-3z"/><path class="play-glyph" d="M8 5.5v13l10.5-6.5z"/></svg></button>
+            <button type="button" class="control" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l7 5-7 5zM13 7l7 5-7 5z"/></svg></button>
+          </div>
+        </div>
+        <div class="side" aria-hidden="true">
+          <span class="airdrop">AirDrop</span>
+          <span class="battery"><i></i>82%</span>
+        </div>
+      </div>
+
+      <div class="card-search" id="card-search">
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>
+          <label class="sr-only" for="search-input">Try NotchPal search</label>
+          <input id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search apps, files, maths…">
+          <span class="orb orb-still" aria-hidden="true"></span>
+        </div>
+        <ul class="results" id="results" aria-live="polite"></ul>
+        <p class="answer" id="answer" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap" id="cap-hook-1">The new MacBook Pro got a Dynamic Island.</p>
+  <p class="cap" id="cap-hook-2">Now every Mac can have one.</p>
+  <div class="brand" id="brand-title">
+    <h1>NotchPal</h1>
+    <p>A free Dynamic Island for every Mac.</p>
+  </div>
+  <p class="cap" id="cap-float">Click the notch. The island floats out.</p>
+  <p class="cap" id="cap-search">Press <kbd>⌥</kbd> <kbd>Space</kbd> to search and ask.</p>
+  <p class="cap" id="cap-live">Calls and timers stay live in the notch.</p>
+  <div class="brand" id="brand-end">
+    <h1>NotchPal</h1>
+    <p>Free and open source. Collects nothing.</p>
+    <span class="url">notchpal.mohammedsaif.dev</span>
+    <p class="fine">For macOS 14 or later on Apple silicon</p>
+  </div>
+
+  <svg class="cursor" id="cursor" viewBox="0 0 24 32" aria-hidden="true">
+    <path d="M3 2 L3 25 L9 19.5 L13 29 L17 27.3 L13 18 L21 18 Z" fill="#000" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+  </svg>
+  <script src="film.js"></script>
+</body>
+</html>
