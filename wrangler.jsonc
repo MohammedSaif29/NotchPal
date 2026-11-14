@@ -1,0 +1,10 @@
+// Tells Cloudflare how to host the NotchPal website: it serves the files in website/ as they are.
+// This has nothing to do with building the Mac app.
+{
+  "name": "notchpal",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./website",
+    "not_found_handling": "404-page"
+  }
+}
