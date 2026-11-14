@@ -3,6 +3,10 @@
 {
   "name": "notchpal",
   "compatibility_date": "2026-11-01",
+  // Only the real address. The workers.dev address and preview links stay off, because they
+  // carry the Cloudflare account's name.
+  "workers_dev": false,
+  "preview_urls": false,
   "routes": [
     { "pattern": "notchpal.mohammedsaif.dev", "custom_domain": true }
   ],
