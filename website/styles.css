@@ -227,6 +227,12 @@ main > .safety {
 .text-page ul { padding-left: 1.2em; }
 .text-page li { margin-top: 6px; }
 
+/* Changelog: one block per release, newest first */
+.changelog .release { margin-top: 44px; padding-top: 30px; border-top: 1px solid var(--rule); }
+.changelog .release h2 { margin-top: 0; }
+.changelog .release h2 span { display: block; margin-top: 4px; font-weight: 500; font-stretch: 100%; color: var(--charcoal); }
+.changelog .released { margin-top: 6px; color: var(--gray); font-size: 0.95rem; }
+
 /* ---------- The island ---------- */
 
 .island { position: fixed; inset: 0 0 auto 0; height: 0; z-index: 50; color: #fff; }
