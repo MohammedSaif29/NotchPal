@@ -79,7 +79,7 @@ code {
   font-weight: 800; font-stretch: 118%; font-size: 1.05rem;
   letter-spacing: -0.01em; text-decoration: none;
 }
-.top nav { display: flex; gap: clamp(14px, 2.4vw, 30px); font-size: 0.95rem; }
+.top nav { display: flex; gap: clamp(14px, 2vw, 24px); font-size: 0.95rem; }
 .top nav a { text-decoration: none; color: var(--gray); }
 .top nav a:hover { color: var(--ink); }
 
@@ -356,9 +356,13 @@ main > .safety {
 
 /* ---------- Small screens ---------- */
 
+/* Below this width the menu would sit under the notch and its droplet, so it moves down. */
+@media (max-width: 1000px) {
+  .top { height: auto; padding-top: 52px; }
+}
+
 @media (max-width: 760px) {
   :root { --notch-w: 150px; }
-  .top { height: auto; padding-top: 52px; }
   .feature, .feature-flip { grid-template-columns: 1fr; }
   .feature-flip .screen { order: 0; }
   .strip { grid-template-columns: 1fr; }
