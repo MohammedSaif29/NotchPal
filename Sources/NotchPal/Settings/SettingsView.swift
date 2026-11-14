@@ -1672,6 +1672,11 @@ private struct UpdatesBox: View {
             case .checking, .downloading, .installing:
                 ProgressView()
                     .controlSize(.small)
+            case .failed where updates.freshDownload != nil:
+                Button("Open Download Page") {
+                    if let page = updates.freshDownload { NSWorkspace.shared.open(page) }
+                }
+                .buttonStyle(.borderedProminent)
             default:
                 Button("Check Now") { updates.check() }
             }

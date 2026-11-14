@@ -178,12 +178,17 @@ final class CalendarService {
         for text in texts {
             let range = NSRange(text.startIndex..., in: text)
             for match in detector.matches(in: text, options: [], range: range) {
-                guard let url = match.url, let host = url.host?.lowercased() else { continue }
-                if meetingHosts.contains(where: { host.contains($0) }) {
-                    return url
-                }
+                guard let url = match.url, isMeetingLink(url) else { continue }
+                return url
             }
         }
         return nil
+    }
+
+    /// Only a secure link on a real meeting service counts, like us02web.zoom.us. Look-alikes such
+    /// as zoom.us.example.com, which a stranger's calendar invite could carry, don't get a Join button.
+    static func isMeetingLink(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https", let host = url.host?.lowercased() else { return false }
+        return meetingHosts.contains { host == $0 || host.hasSuffix("." + $0) }
     }
 }

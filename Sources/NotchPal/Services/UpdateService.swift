@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 import AppKit
-import CryptoKit
 import Observation
 
 /// A NotchPal version published on GitHub.
@@ -14,11 +13,24 @@ struct UpdateRelease: Equatable, Sendable {
     let download: URL
     /// GitHub's SHA-256 fingerprint of the download, used to check nothing was changed on the way.
     let digest: String?
+    /// The maker's signature for the download (see ReleaseSignature).
+    let signature: URL?
 }
 
 private struct UpdateError: Error {
     let message: String
-    init(_ message: String) { self.message = message }
+    /// The update might be fine but couldn't be proven to come from NotchPal's maker, so the safe
+    /// way to get it is a fresh download from the official page.
+    var freshDownload = false
+    init(_ message: String, freshDownload: Bool = false) {
+        self.message = message
+        self.freshDownload = freshDownload
+    }
+
+    static let unsigned = UpdateError(
+        "NotchPal couldn't confirm this update came from its maker, so it didn't install it. To be safe, get the new version from the official download page.",
+        freshDownload: true
+    )
 }
 
 /// Updates, like on a phone: NotchPal asks GitHub once a day whether there's a new version, and
@@ -43,6 +55,8 @@ final class UpdateService {
 
     private(set) var status: Status = .idle
     private(set) var lastChecked: Date?
+    /// Set when an update couldn't be proven genuine: the official page to download it from instead.
+    private(set) var freshDownload: URL?
 
     /// Called when a new version is found by the daily check.
     @ObservationIgnored var onAvailable: (@MainActor (Release) -> Void)?
@@ -139,18 +153,27 @@ final class UpdateService {
             return
         }
         status = .downloading
+        freshDownload = nil
         let bundleID = Bundle.main.bundleIdentifier ?? "com.saif.notchpal"
         Task {
             do {
+                guard let signatureURL = release.signature else { throw UpdateError.unsigned }
+                let (signatureData, signatureResponse) = try await URLSession.shared.data(from: signatureURL)
+                guard (signatureResponse as? HTTPURLResponse)?.statusCode == 200 else {
+                    throw UpdateError("The download didn't work. Try again later.")
+                }
                 let (file, response) = try await URLSession.shared.download(from: release.download)
                 guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                     throw UpdateError("The download didn't work. Try again later.")
                 }
                 self.status = .installing
-                let newApp = try await Self.prepare(file, release: release, bundleID: bundleID)
+                let signature = String(decoding: signatureData, as: UTF8.self)
+                let newApp = try await Self.prepare(file, release: release, signature: signature, bundleID: bundleID)
                 self.restart(into: newApp, replacing: appURL, version: release.version)
             } catch {
-                let message = (error as? UpdateError)?.message ?? "The update didn't install. Your current version is untouched."
+                let failure = error as? UpdateError
+                let message = failure?.message ?? "The update didn't install. Your current version is untouched."
+                if failure?.freshDownload == true { self.freshDownload = release.page }
                 self.status = .failed(message)
                 self.onFailure?(message)
             }
@@ -170,9 +193,12 @@ final class UpdateService {
         else {
             throw UpdateError("The latest release on GitHub doesn't have a NotchPal download.")
         }
+        let signatureName = ((asset["name"] as? String) ?? "") + ".sig"
+        let signature = (assets.first { ($0["name"] as? String) == signatureName }?["browser_download_url"] as? String)
+            .flatMap(URL.init(string:))
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         return Release(version: version, notes: json["body"] as? String ?? "", page: page,
-                       download: download, digest: asset["digest"] as? String)
+                       download: download, digest: asset["digest"] as? String, signature: signature)
     }
 
     /// "0.10.0" is newer than "0.9.2".
@@ -187,16 +213,21 @@ final class UpdateService {
         return false
     }
 
-    /// Checks the download's fingerprint, unzips it, and makes sure it really is NotchPal at the
-    /// right version with an intact signature. Runs off the main thread.
-    private nonisolated static func prepare(_ zip: URL, release: Release, bundleID: String) async throws -> URL {
+    /// Checks the download's fingerprint and the maker's signature, unzips it, and makes sure it
+    /// really is NotchPal at the right version with an intact app signature. Runs off the main thread.
+    private nonisolated static func prepare(_ zip: URL, release: Release, signature: String,
+                                            bundleID: String) async throws -> URL {
         guard let digest = release.digest, digest.hasPrefix("sha256:") else {
             throw UpdateError("GitHub didn't give a fingerprint for this download, so NotchPal won't install it. Download it from GitHub instead.")
         }
         let data = try Data(contentsOf: zip)
-        let actual = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let actual = ReleaseSignature.sha256Hex(of: data)
         guard actual == digest.dropFirst("sha256:".count).lowercased() else {
             throw UpdateError("The download doesn't match GitHub's fingerprint, so it wasn't installed.")
+        }
+        // The important one: only the maker's Mac, with the maker's Touch ID, can make this signature.
+        guard ReleaseSignature.isValid(signature, version: release.version, sha256Hex: actual) else {
+            throw UpdateError.unsigned
         }
 
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("NotchPal-update-\(UUID().uuidString)")

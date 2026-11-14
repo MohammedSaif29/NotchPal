@@ -54,9 +54,21 @@ make_app "$BIN_DIR" "$APP"
 # A zip for GitHub Releases. ditto keeps everything inside the app exactly as macOS expects.
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)"
 mkdir -p dist
-rm -f dist/NotchPal-*.zip
+rm -f dist/NotchPal-*.zip dist/NotchPal-*.zip.sig
 ditto -c -k --norsrc --noextattr --keepParent "$APP" "dist/NotchPal-$VERSION.zip"
 echo "Release zip: dist/NotchPal-$VERSION.zip"
+
+# Official releases only: a ".sign-release" file asks for this zip to be signed with the release
+# key in this Mac's security chip (see Scripts/release-key.sh). Touch ID is asked for here.
+if [[ -f .sign-release ]]; then
+    rm -f .sign-release
+    if bash Scripts/release-key.sh sign; then
+        echo "RELEASE SIGNED"
+        bash Scripts/release-key.sh check || true
+    else
+        echo "RELEASE NOT SIGNED"
+    fi
+fi
 
 # A personal copy for this Mac only, with extras from Sources/NotchPal/Personal. It's built
 # separately, so the release zip above never contains them. Turned on by a ".personal" file.

@@ -89,7 +89,7 @@ struct AlertView: View {
         case .updated(let version):
             "Now on version \(version)"
         case .updateFailed:
-            "Your current version is untouched"
+            app.updates.freshDownload == nil ? "Your current version is untouched" : "Get it from the official page instead"
         }
     }
 
@@ -211,7 +211,23 @@ struct AlertView: View {
         case .updating:
             ProgressView()
                 .controlSize(.small)
-        case .welcome, .updated, .updateFailed:
+        case .updateFailed:
+            if let page = app.updates.freshDownload {
+                Button {
+                    NSWorkspace.shared.open(page)
+                    app.alerts.dismiss(.update)
+                } label: {
+                    Text("Download")
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.horizontal, 14)
+                        .frame(height: 28)
+                        .foregroundStyle(.black)
+                        .background(Capsule().fill(Color.white))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(PressableStyle())
+            }
+        case .welcome, .updated:
             EmptyView()
         }
     }

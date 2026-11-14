@@ -35,7 +35,7 @@ It removes the "downloaded from the internet" flag from NotchPal only.
 
 **Start at login:** Settings → General → Open NotchPal at login.
 
-**Update:** when a new version is out, NotchPal tells you in the notch. Click **Update** and it downloads, checks and installs it, then restarts by itself. Your settings stay. You can also use the menu bar icon → Check for Updates. (Still on 0.4.0? Download the latest version once by hand; from 0.5.0 on, NotchPal updates itself.)
+**Update:** when a new version is out, NotchPal tells you in the notch. Click **Update** and it downloads, checks and installs it, then restarts by itself. Your settings stay. From 0.7.1 on, NotchPal only installs updates signed by its maker (see [Safe updates](#safe-updates)). You can also use the menu bar icon → Check for Updates. (Still on 0.4.0? Download the latest version once by hand; from 0.5.0 on, NotchPal updates itself.)
 
 **Uninstall:** click the capsule icon in the menu bar → Quit NotchPal, then drag NotchPal from Applications to the Trash.
 
@@ -109,6 +109,14 @@ Games, timers and your favourite apps:
 
 These were made with NotchPal's own **Save Pictures of My Island…** (menu bar icon, or Settings → About). Use it to share your setup!
 
+## Safe updates
+
+Only download NotchPal from **[github.com/MohammedSaif29/NotchPal](https://github.com/MohammedSaif29/NotchPal/releases/latest)**. Copies from anywhere else aren't official.
+
+Every official release is signed with a key that lives inside the security chip (Secure Enclave) of the maker's Mac. That key can't be copied off the chip, and each signature needs his Touch ID. NotchPal checks that signature before installing any update and refuses anything else, so even someone who broke into the GitHub account couldn't push a fake update to you. Each release lists its signature next to the download (`NotchPal-x.y.z.zip.sig`); you don't need to do anything with it.
+
+If NotchPal ever says it couldn't confirm an update came from its maker, it leaves your copy untouched. Click **Download** to get the new version from the official page instead.
+
 ## Privacy, and how it works
 
 NotchPal collects nothing. The only time it goes online by itself is to ask GitHub, once a day, whether there's a new version. That request contains nothing about you or your Mac, and you can switch it off in Settings → About. The links in About (LinkedIn, GitHub, Report a Problem) only open your browser when you click them.
@@ -137,6 +145,8 @@ bash Scripts/build-app.sh --run
 That builds NotchPal, installs it to `~/Applications/NotchPal.app`, and makes a release zip in `dist/`.
 
 For development, `bash Scripts/dev-watch.sh` rebuilds and relaunches the app every time the `.rebuild` file changes, and writes the output to `build.log`.
+
+Official releases are signed with `Scripts/release-key.sh`. You don't need it to build or run NotchPal yourself.
 
 Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md).
 

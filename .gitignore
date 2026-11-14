@@ -9,3 +9,7 @@ build.log
 .personal
 .build-personal/
 Sources/NotchPal/Personal/
+.sign-release
+.save-pictures
+README Pictures/
+NotchPal Pictures/
