@@ -3,6 +3,9 @@
 {
   "name": "notchpal",
   "compatibility_date": "2026-11-01",
+  "routes": [
+    { "pattern": "notchpal.mohammedsaif.dev", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./website",
     "not_found_handling": "404-page"
