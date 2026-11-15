@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="notch.js" defer></script>
   <script src="site.js" defer></script>
+  <script src="motion.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -149,6 +150,10 @@
       <p class="try"><span class="try-pointer">Click</span><span class="try-touch">Tap</span> the notch at the top of this page<span class="try-keys">, or press <kbd>⌥</kbd> <kbd>Space</kbd></span>.</p>
     </section>
 
+    <section class="manifesto" aria-label="What NotchPal is for">
+      <p data-fill>Your MacBook has a black notch at the top of the screen, and most of the day it just sits there. NotchPal turns it into the most useful spot on your Mac: your song, your next meeting, your call, your timer and a search box, right where your eyes already go.</p>
+    </section>
+
     <section class="feature" id="features">
       <figure class="screen">
         <img src="img/floating-island.webp" width="1184" height="558" alt="The NotchPal island floating below the notch, playing a song, with AirDrop and a battery ring beside the player">
@@ -184,13 +189,125 @@
       </div>
     </section>
 
+    <section class="day" id="day" aria-labelledby="day-title">
+      <div class="day-head">
+        <h2 id="day-title">A day with NotchPal</h2>
+        <p>Scroll through an ordinary day on a Mac. The island keeps up, then gets out of the way.</p>
+      </div>
+      <div class="day-track">
+        <div class="day-rail" aria-hidden="true"><span class="day-marker"></span></div>
+        <ol class="day-list">
+          <li class="day-item">
+            <time class="day-time" datetime="08:30">8:30</time>
+            <div class="day-body">
+              <h3>Music from any app</h3>
+              <p>Spotify, Apple Music or a song in your browser: the cover, the controls and a soft glow in the song's colours, right in the notch.</p>
+              <div class="mac" aria-hidden="true">
+                <span class="mac-clock">8:30</span>
+                <div class="isle isle-music">
+                  <span class="isle-art"></span>
+                  <span class="isle-text"><b>Golden Hour</b><small>Morning playlist</small></span>
+                  <span class="bars"><i></i><i></i><i></i><i></i></span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="day-item">
+            <time class="day-time" datetime="09:58">9:58</time>
+            <div class="day-body">
+              <h3>Join, without hunting for the link</h3>
+              <p>Your next meeting waits in the notch. Take a quick look in the Mirror, then one click on Join opens Zoom, Meet, Teams or FaceTime.</p>
+              <div class="mac" aria-hidden="true">
+                <span class="mac-clock">9:58</span>
+                <div class="isle isle-meeting">
+                  <svg class="isle-icon" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+                  <span class="isle-text"><b>Design review</b><small>Starts in 2 min</small></span>
+                  <span class="isle-join">Join</span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="day-item" data-call>
+            <time class="day-time" datetime="10:00">10:00</time>
+            <div class="day-body">
+              <h3>The call stays in sight</h3>
+              <p>On a call in FaceTime, Zoom, Meet, Teams or WhatsApp, the notch shows a running clock, so you always know how long it's been.</p>
+              <div class="mac" aria-hidden="true">
+                <span class="mac-clock">10:00</span>
+                <div class="isle isle-call">
+                  <span class="isle-phone"><svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></span>
+                  <span class="isle-text"><b>Zoom</b></span>
+                  <span class="bars bars-call"><i></i><i></i><i></i><i></i></span>
+                  <b class="isle-clock" data-call-clock>0:00</b>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="day-item">
+            <time class="day-time" datetime="13:10">13:10</time>
+            <div class="day-body">
+              <h3>Ask from anywhere</h3>
+              <p>Press <kbd>⌥</kbd> <kbd>Space</kbd> to open apps and files, do maths as you type, or ask Apple Intelligence without leaving your work.</p>
+              <div class="mac" aria-hidden="true">
+                <span class="mac-clock">13:10</span>
+                <div class="isle isle-search">
+                  <span class="isle-query"><svg class="isle-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>24*7<i class="caret"></i></span>
+                  <span class="isle-result"><b>168</b><small>Calculator</small></span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="day-item">
+            <time class="day-time" datetime="15:30">15:30</time>
+            <div class="day-body">
+              <h3>Drop it on the notch</h3>
+              <p>Drag a file up to the notch to send it with AirDrop to a nearby iPhone or Mac.</p>
+              <div class="mac" aria-hidden="true">
+                <span class="mac-clock">15:30</span>
+                <span class="mac-file"></span>
+                <div class="isle isle-airdrop">
+                  <svg class="isle-icon" viewBox="0 0 24 24"><path d="M12 13.5a1.5 1.5 0 1 0 0-.01M8.5 16.5a5 5 0 1 1 7 0M5.6 19.4a9 9 0 1 1 12.8 0"/></svg>
+                  <span class="isle-text"><b>Drop to AirDrop</b><small>iPhone nearby</small></span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="day-item">
+            <time class="day-time" datetime="18:40">18:40</time>
+            <div class="day-body">
+              <h3>AirPods in</h3>
+              <p>Switch to AirPods or another speaker, and a small pill tells you where your sound is playing.</p>
+              <div class="mac" aria-hidden="true">
+                <span class="mac-clock">18:40</span>
+                <div class="isle isle-airpods">
+                  <svg class="isle-icon" viewBox="0 0 24 24"><path d="M7 4.5a3 3 0 0 0-3 3c0 1.7 1.3 3 3 3h.5V19a1 1 0 0 0 2 0V7.5a3 3 0 0 0-2.5-3zM17 4.5a3 3 0 0 1 3 3c0 1.7-1.3 3-3 3h-.5V19a1 1 0 0 1-2 0V7.5a3 3 0 0 1 2.5-3z"/></svg>
+                  <span class="isle-text"><b>AirPods Pro</b></span>
+                  <span class="isle-ring"></span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="day-item">
+            <time class="day-time" datetime="21:00">21:00</time>
+            <div class="day-body">
+              <h3>Movie night</h3>
+              <p>Play something full screen and the island steps aside. Important alerts still get through.</p>
+              <div class="mac mac-movie" aria-hidden="true">
+                <span class="mac-clock">21:00</span>
+                <span class="mac-film"><i></i></span>
+                <div class="isle isle-movie"></div>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
     <section class="more" aria-labelledby="more-title">
       <h2 id="more-title">Everything else in the notch</h2>
       <dl class="more-list">
-        <div><dt>Music from any app</dt><dd>Spotify, Apple Music, YouTube in your browser and more, with album art and a visualiser tinted to the cover.</dd></div>
         <div><dt>A soft glow</dt><dd>A faint, still light at rest. It pulses with a new song, counts down a timer, and turns green while the camera is on.</dd></div>
         <div><dt>Mirror</dt><dd>Check yourself before a call, with Centre Stage and reactions. The camera is only on while the mirror is open.</dd></div>
-        <div><dt>Calendar</dt><dd>Today's events, with one-click Join for Zoom, Meet, Teams, FaceTime and Webex.</dd></div>
         <div><dt>Notes, timers and games</dt><dd>A scratchpad that saves itself, quick timers, and Runner, Flappy, Snake and Pong.</dd></div>
         <div><dt>Battery, your way</dt><dd>A ring, a pill, the classic battery or just the number, in iPhone colours.</dd></div>
         <div><dt>Pal, the notch pet</dt><dd>Dances to music, munches electricity while charging and naps late at night.</dd></div>

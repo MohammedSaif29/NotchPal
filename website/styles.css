@@ -162,6 +162,168 @@ main > section { padding-block: clamp(48px, 8vh, 96px); }
 .strip img { aspect-ratio: 5 / 2; object-fit: cover; }
 .strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
 
+/* ---------- Motion: only when motion.js adds .moving (never with reduce motion) ---------- */
+
+/* The big paragraph: words fill in with ink as you read. */
+.manifesto p {
+  max-width: 30ch;
+  font-size: clamp(1.6rem, 3.6vw, 2.75rem); font-weight: 600; font-stretch: 104%;
+  line-height: 1.22; letter-spacing: -0.015em; color: var(--ink);
+}
+.moving [data-fill] .word {
+  opacity: clamp(0.18, calc(var(--p, 0) * (var(--n) + 6) - var(--i)), 1);
+}
+
+/* Screenshots open out of a notch shape, the way the island opens. */
+.moving .feature .screen {
+  clip-path: inset(0 calc((1 - var(--open, 1)) * 34%) calc((1 - var(--open, 1)) * 82%)
+    round 0 0 calc(22px + (1 - var(--open, 1)) * 18px) calc(22px + (1 - var(--open, 1)) * 18px));
+}
+.moving .feature .screen > img { transform: scale(calc(1.12 - var(--open, 1) * 0.12)); transform-origin: 50% 0; }
+
+/* ---------- A day with NotchPal: the page goes ink black, like the notch ---------- */
+
+main > .day {
+  max-width: none; padding-inline: 0; background: var(--ink); color: #c9ccd1;
+  padding-block: clamp(80px, 14vh, 150px);
+}
+.day-head { max-width: 40rem; margin: 0 auto; padding: 0 var(--gutter); text-align: center; }
+.day h2 { color: var(--paper-high); }
+.day-head p { margin-top: 16px; }
+
+.day-track { position: relative; max-width: var(--page); margin: clamp(48px, 9vh, 96px) auto 0; padding: 0 var(--gutter); }
+.day-rail {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px;
+  background: #2b2d31;
+}
+.day-rail::after {
+  content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, rgba(250, 249, 245, 0), var(--paper-high) 140px);
+  box-shadow: 0 0 10px rgba(250, 249, 245, 0.45);
+}
+.moving .day-rail::after { height: var(--fill, 0px); }
+.day-marker { display: none; }
+.moving .day-marker {
+  display: block; position: absolute; left: 50%; top: 0;
+  width: 44px; height: 15px; background: var(--ink); border-radius: 0 0 8px 8px;
+  transform: translate(-50%, calc(var(--fill, 0px) - 50%));
+  box-shadow: 0 0 0 1px rgba(250, 249, 245, 0.7), 0 0 16px 3px rgba(250, 249, 245, 0.35);
+}
+
+.day-list { list-style: none; }
+.day-item {
+  display: grid; grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
+  align-items: start; padding-block: 9vh;
+}
+.day-time {
+  grid-column: 1; position: sticky; top: calc(50vh - 0.5em);
+  justify-self: end; line-height: 1;
+  font-size: clamp(2.4rem, 5.6vw, 4.4rem); font-weight: 700; font-stretch: 112%;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--paper-high);
+  transition: color 0.5s ease, font-stretch 0.6s ease;
+}
+.day-body { grid-column: 3; transition: opacity 0.5s ease; }
+.day-body h3 { color: var(--paper-high); font-size: 1.3rem; font-weight: 700; font-stretch: 108%; line-height: 1.2; }
+.day-body p { margin-top: 10px; max-width: 40ch; }
+.day kbd { background: #1e2023; border-color: #3a3d42; color: var(--paper-high); }
+
+.moving .day-item:not(.is-on) .day-time { color: #3a3d42; font-stretch: 78%; }
+.moving .day-item:not(.is-on) .day-body { opacity: 0.3; }
+
+/* A little MacBook screen with its notch. Each stop's island opens into that activity. */
+.mac {
+  position: relative; margin-top: 24px; max-width: 440px; aspect-ratio: 16 / 7;
+  border-radius: 14px; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 18% 115%, #6b7079 0%, rgba(107, 112, 121, 0) 60%),
+    radial-gradient(90% 80% at 92% -12%, #4a4e55 0%, rgba(74, 78, 85, 0) 55%),
+    linear-gradient(165deg, #303338, #16171a);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+.mac::before {
+  content: ""; position: absolute; left: 12px; top: 8px; width: 54px; height: 5px; border-radius: 3px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 9px, transparent 9px 15px, rgba(255, 255, 255, 0.35) 15px 30px, transparent 30px 36px, rgba(255, 255, 255, 0.35) 36px);
+}
+.mac-clock { position: absolute; right: 12px; top: 4px; font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.8); font-variant-numeric: tabular-nums; }
+
+.isle {
+  --w: 74%; --h: 44px;
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: var(--w); height: var(--h); padding: 0 12px;
+  display: flex; align-items: center; gap: 9px; overflow: hidden;
+  background: var(--ink); color: #fff; border-radius: 0 0 18px 18px;
+  font-size: 11px; line-height: 1.25; white-space: nowrap;
+  transition: width 0.62s cubic-bezier(0.3, 1.32, 0.5, 1), height 0.5s cubic-bezier(0.3, 1.32, 0.5, 1), border-radius 0.5s ease;
+}
+.isle > * { transition: opacity 0.28s ease 0.2s; }
+.moving .day-item:not(.is-now) .isle { width: 26%; height: 16px; border-radius: 0 0 9px 9px; }
+.moving .day-item:not(.is-now) .isle > * { opacity: 0; transition-delay: 0s; }
+
+.isle-icon { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.isle-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.isle-text b { font-weight: 650; font-size: 11.5px; }
+.isle-text small { color: #9a9fa6; font-size: 10px; }
+.isle-art { width: 28px; height: 28px; flex: none; border-radius: 7px; background: linear-gradient(140deg, #f0c48e, #c0566e 55%, #4b2b61); }
+.isle-music { box-shadow: 0 6px 22px -6px rgba(214, 120, 120, 0.55); }
+
+.bars { display: flex; align-items: center; gap: 2px; height: 14px; flex: none; color: #f0c48e; }
+.bars i { width: 3px; height: 100%; border-radius: 2px; background: currentColor; animation: bar 0.8s ease-in-out infinite alternate; }
+.bars i:nth-child(2) { animation-delay: -0.3s; }
+.bars i:nth-child(3) { animation-delay: -0.55s; }
+.bars i:nth-child(4) { animation-delay: -0.15s; }
+.bars-call { color: #30d158; }
+@keyframes bar { from { transform: scaleY(0.3); } to { transform: scaleY(1); } }
+
+.isle-meeting { --w: 82%; }
+.isle-join { flex: none; padding: 4px 11px; border-radius: 99px; background: var(--paper-high); color: var(--ink); font-weight: 700; font-size: 10.5px; }
+
+.isle-call { --w: 68%; --h: 38px; }
+.isle-phone { width: 22px; height: 22px; flex: none; border-radius: 50%; background: #30d158; display: grid; place-items: center; }
+.isle-phone svg { width: 12px; height: 12px; fill: #fff; }
+.isle-clock { flex: none; font-weight: 650; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.isle-search { --w: 86%; --h: 76px; flex-direction: column; align-items: stretch; justify-content: center; gap: 6px; }
+.isle-query { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 8px; background: #1c1d20; font-size: 12px; }
+.isle-query .isle-icon { width: 14px; height: 14px; color: #9a9fa6; }
+.caret { width: 1.5px; height: 13px; background: #fff; margin-left: -4px; animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.isle-result { display: flex; align-items: baseline; justify-content: space-between; padding: 0 8px; }
+.isle-result b { font-size: 15px; font-weight: 700; }
+.isle-result small { color: #9a9fa6; font-size: 10px; }
+
+.isle-airdrop { --w: 70%; }
+.isle-airdrop .isle-icon { color: #64aaff; }
+.mac-file {
+  position: absolute; left: 50%; top: 58%; width: 22px; height: 28px; margin-left: -11px;
+  border-radius: 3px 8px 3px 3px; background: var(--paper-high);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45); opacity: 0;
+}
+.day-item.is-now .mac-file, html:not(.moving) .mac-file { animation: drop 2.4s cubic-bezier(0.45, 0, 0.3, 1) 0.4s infinite; }
+@keyframes drop {
+  0% { opacity: 0; transform: translateY(26px); }
+  20% { opacity: 1; }
+  70% { opacity: 1; transform: translateY(-46px) scale(0.55); }
+  85%, 100% { opacity: 0; transform: translateY(-52px) scale(0.4); }
+}
+
+.isle-airpods { --w: 62%; --h: 38px; }
+.isle-ring { width: 18px; height: 18px; flex: none; border-radius: 50%; background: conic-gradient(#30d158 0 92%, #3a3d42 0); -webkit-mask: radial-gradient(circle, transparent 5px, #000 5.5px); mask: radial-gradient(circle, transparent 5px, #000 5.5px); }
+
+/* Movie night: a full-screen film, and the island steps aside. */
+.mac-film {
+  position: absolute; inset: 0; background: linear-gradient(120deg, #2a1d17, #0f1418 55%, #20262c);
+  transition: opacity 0.6s ease;
+}
+.mac-film::before, .mac-film::after { content: ""; position: absolute; left: 0; right: 0; height: 13%; background: var(--ink); }
+.mac-film::before { top: 0; }
+.mac-film::after { bottom: 0; }
+.mac-film i { position: absolute; left: 8%; right: 8%; bottom: 6%; height: 2px; z-index: 1; border-radius: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.75) 0 38%, rgba(255, 255, 255, 0.2) 38%); }
+.isle-movie { width: 0; height: 16px; padding: 0; opacity: 0; transition: width 0.5s ease, opacity 0.4s ease; }
+.mac-movie .mac-clock { z-index: 1; opacity: 0; transition: opacity 0.4s ease; }
+.moving .day-item:not(.is-now) .mac-film { opacity: 0; }
+.moving .day-item:not(.is-now) .isle-movie { width: 26%; opacity: 1; }
+.moving .day-item:not(.is-now) .mac-movie .mac-clock { opacity: 1; }
+
 /* ---------- Safety: the page inverts to charcoal ---------- */
 
 main > .safety {
@@ -369,6 +531,11 @@ main > .safety {
 
 @media (max-width: 760px) {
   :root { --notch-w: 150px; }
+  .day-head { text-align: left; }
+  .day-rail { left: calc(var(--gutter) + 9px); }
+  .day-item { grid-template-columns: 42px minmax(0, 1fr); padding-block: 0 9vh; }
+  .day-time { grid-column: 2; position: static; justify-self: start; font-size: 2.2rem; margin-bottom: 14px; }
+  .day-body { grid-column: 2; }
   .feature, .feature-flip { grid-template-columns: 1fr; }
   .feature-flip .screen { order: 0; }
   .strip { grid-template-columns: 1fr; }
@@ -382,6 +549,7 @@ main > .safety {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .bars i, .caret, .mac-file { animation: none; }
   .island-intro { display: none; }
   .wave i { animation: none; }
   .notch, .button { transition: none; }
